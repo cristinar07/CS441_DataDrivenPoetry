@@ -1,0 +1,137 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <title>Migrant Poem: A Scrollytelling Experience</title>
+    <link rel="stylesheet" type="text/css" href="styles.css" />
+    <script src="https://d3js.org/d3.v7.min.js"></script>
+  </head>
+  <body>
+    <header>
+      <h1 class="title">Where No One Counts</h1>
+    </header>
+
+    <main class="wrapper">
+      <div class="left-column">
+        <div class="left-column-content">
+          <div class="filler-verse"></div>
+
+          <!-- Verse 1 -->
+          <ul class="verse" id="verse1">
+            <li class="line">From the US-Mexico crossing to the Sahara’s heat</li>
+            <li class="line">The Mediterranean waves, where destinies meet</li>
+            <li class="line">Through deserts and seas, across invisible lines they roam</li>
+            <li class="line">A journey of many, yet none find their home</li>
+          </ul>
+
+          <!-- Verse 2 -->
+          <ul class="verse" id="verse2">
+            <li class="line">They walked beneath the burning sun</li>
+            <li class="line">Feet on dust, with nowhere to run</li>
+            <li class="line">Chasing a dream, a sliver of light</li>
+            <li class="line">A place to rest, an end to the night</li>
+          </ul>
+
+          <!-- Verse 3 -->
+          <ul class="verse" id="verse3">
+            <li class="line">They left behind stories</li>
+            <li class="line">Wrapped in the arms of mothers</li>
+            <li class="line">Pressed into the palms of fathers</li>
+            <li class="line">Tucked inside the laughter of brothers</li>
+          </ul>
+
+          <!-- Verse 4 -->
+          <ul class="verse" id="verse4">
+            <li class="line">They crossed rivers with no bridge in sight</li>
+            <li class="line">Boarded boats in the dead of night</li>
+            <li class="line">Waded through deserts that swallowed their names</li>
+            <li class="line">Stepped onto roads where none remain</li>
+          </ul>
+
+          <!-- Verse 5 -->
+          <ul class="verse" id="verse5">
+            <li class="line">But the tide rose higher than their cries</li>
+            <li class="line">The sun burned fierce beneath their eyes</li>
+            <li class="line">The border stretched beyond their will</li>
+            <li class="line">And silence waits for them still</li>
+          </ul>
+
+          <!-- Verse 6 -->
+          <ul class="verse" id="verse6">
+            <li class="line">The border counted them once</li>
+            <li class="line">Trespassers. Statistics. Infractions.</li>
+            <li class="line">A file opened, a number assigned</li>
+            <li class="line">A case closed before the ink had dried</li>
+          </ul>
+
+          <!-- Verse 7 -->
+          <ul class="verse" id="verse7">
+            <li class="line">The sea took them in</li>
+            <li class="line">No names. No papers. No protest.</li>
+            <li class="line">No appeals could be chased</li>
+            <li class="line">No fingerprints could be traced</li>
+          </ul>
+
+          <!-- Verse 8 -->
+          <ul class="verse" id="verse8">
+            <li class="line">A boat overturned, but the logs show none</li>
+            <li class="line">A child disappeared, but the ledger reads one</li>
+            <li class="line">A man begged for water, but the form was denied</li>
+            <li class="line">A body was buried, but no one cried</li>
+          </ul>
+
+          <!-- Verse 9 -->
+          <ul class="verse" id="verse9">
+            <li class="line">We do not count them unless they belong</li>
+            <li class="line">We do not grieve them unless they are strong</li>
+            <li class="line">We do not mourn them unless they exist</li>
+            <li class="line">And so they vanish, dismissed</li>
+          </ul>
+
+          <!-- Verse 10 -->
+          <ul class="verse" id="verse10">
+            <li class="line">Vanished once, where no one can see</li>
+            <li class="line">Vanished twice, from history</li>
+            <li class="line">Stamped and erased</li>
+            <li class="line">Filed and replaced</li>
+          </ul>
+
+          <!-- Verse 11 -->
+          <ul class="verse" id="verse11">
+            <li class="line">But we will not move on</li>
+            <li class="line">We will not forget the hands that reached for a future</li>
+            <li class="line">And were met with waves that did not care</li>
+            <li class="line">Gates that did not open</li>
+            <li class="line">Land that did not dare</li>
+          </ul>
+
+          <!-- Verse 12 -->
+          <ul class="verse" id="verse12">
+            <li class="line">We will carve their names into the sky</li>
+            <li class="line">Let the stars hold them high</li>
+            <li class="line">Let the earth remember their weight</li>
+            <li class="line">Let the wind echo their fate</li>
+          </ul>
+
+          <!-- Verse 13 -->
+          <ul class="verse" id="verse13">
+            <li class="line">So even if they are lost</li>
+            <li class="line">They are never truly gone.</li>
+          </ul>
+
+          <div class="filler-verse"></div>
+        </div>
+      </div>
+
+      <div class="right-column">
+        <svg id="svg"></svg>
+      </div>
+    </main>
+
+    <footer>
+      <button class="arrow-button" id="backward-button">◄</button>
+      <button class="arrow-button" id="forward-button">►</button>
+    </footer>
+
+    <script src="main.js"></script>
+  </body>
+</html>
