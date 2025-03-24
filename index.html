@@ -1,137 +1,177 @@
 <!DOCTYPE html>
-<html>
-  <head>
-    <title>Migrant Poem: A Scrollytelling Experience</title>
-    <link rel="stylesheet" type="text/css" href="styles.css" />
-    <script src="https://d3js.org/d3.v7.min.js"></script>
-  </head>
-  <body>
-    <header>
-      <h1 class="title">Where No One Counts</h1>
-    </header>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>Where No One Counts</title>
+  <link rel="stylesheet" href="styles.css" />
+  <script src="https://d3js.org/d3.v7.min.js"></script>
+</head>
+<body>
 
-    <main class="wrapper">
-      <div class="left-column">
-        <div class="left-column-content">
-          <div class="filler-verse"></div>
+  <!-- TITLE / INTRO -->
+  <section class="full-slide intro">
+    <div class="intro-content">
+      <h1 class="main-title">Where No One Counts</h1>
+      <p class="subtitle">An Interactive Visualization by Cristina R and Yareli G</p>
+      <div class="scroll-indicator">↓</div>
+    </div>
+  </section>
 
-          <!-- Verse 1 -->
-          <ul class="verse" id="verse1">
-            <li class="line">From the US-Mexico crossing to the Sahara’s heat</li>
-            <li class="line">The Mediterranean waves, where destinies meet</li>
-            <li class="line">Through deserts and seas, across invisible lines they roam</li>
-            <li class="line">A journey of many, yet none find their home</li>
-          </ul>
+  <!-- MAIN SCROLL CONTENT -->
+  <main class="scrollytelling-container">
 
-          <!-- Verse 2 -->
-          <ul class="verse" id="verse2">
-            <li class="line">They walked beneath the burning sun</li>
-            <li class="line">Feet on dust, with nowhere to run</li>
-            <li class="line">Chasing a dream, a sliver of light</li>
-            <li class="line">A place to rest, an end to the night</li>
-          </ul>
+    <!-- Slide 1: Verse 1 -->
+    <section class="full-slide content-slide">
+      <div class="poem-box">
+        <p>From the US-Mexico crossing to the Sahara’s heat</p>
+        <p>The Mediterranean waves, where destinies meet</p>
+        <p>Through deserts and seas, across invisible lines they roam</p>
+        <p>A journey of many, yet none find their home</p>
+      </div>
+      <div class="visual-box">
+        <svg id="vis1" width="960" height="600"></svg>
+      </div>
+    </section>
 
-          <!-- Verse 3 -->
-          <ul class="verse" id="verse3">
-            <li class="line">They left behind stories</li>
-            <li class="line">Wrapped in the arms of mothers</li>
-            <li class="line">Pressed into the palms of fathers</li>
-            <li class="line">Tucked inside the laughter of brothers</li>
-          </ul>
+    <!-- Slide 2: Verse 2 -->
+    <section class="full-slide content-slide">
+      <div class="poem-box">
+        <p>They walked beneath the burning sun</p>
+        <p>Feet on dust, with nowhere to run</p>
+        <p>Chasing a dream, a sliver of light</p>
+        <p>A place to rest, an end to the night</p>
+      </div>
+      <div class="visual-box">
+        <svg id="vis2" width="960" height="600"></svg>
+      </div>
+    </section>
 
-          <!-- Verse 4 -->
-          <ul class="verse" id="verse4">
-            <li class="line">They crossed rivers with no bridge in sight</li>
-            <li class="line">Boarded boats in the dead of night</li>
-            <li class="line">Waded through deserts that swallowed their names</li>
-            <li class="line">Stepped onto roads where none remain</li>
-          </ul>
+    <!-- Slide 3: Verse 3 -->
+    <section class="full-slide content-slide">
+      <div class="poem-box">
+        <p>They left behind stories</p>
+        <p>Wrapped in the arms of mothers</p>
+        <p>Pressed into the palms of fathers</p>
+        <p>Tucked inside the laughter of brothers</p>
+      </div>
+      <div class="visual-box">
+        <svg id="vis3" width="960" height="600"></svg>
+      </div>
+    </section>
 
-          <!-- Verse 5 -->
-          <ul class="verse" id="verse5">
-            <li class="line">But the tide rose higher than their cries</li>
-            <li class="line">The sun burned fierce beneath their eyes</li>
-            <li class="line">The border stretched beyond their will</li>
-            <li class="line">And silence waits for them still</li>
-          </ul>
+    <!-- TRANSITION SLIDE – Verse 4 -->
+    <section class="full-slide transition-slide">
+      <div class="poem-box transition">
+        <p>They crossed rivers with no bridge in sight</p>
+        <p>Boarded boats in the dead of night</p>
+        <p>Waded through deserts that swallowed their names</p>
+        <p>Stepped onto roads where none remain</p>
+      </div>
+    </section>
 
-          <!-- Verse 6 -->
-          <ul class="verse" id="verse6">
-            <li class="line">The border counted them once</li>
-            <li class="line">Trespassers. Statistics. Infractions.</li>
-            <li class="line">A file opened, a number assigned</li>
-            <li class="line">A case closed before the ink had dried</li>
-          </ul>
+    <!-- Slide 4: Verse 5 -->
+    <section class="full-slide content-slide">
+      <div class="poem-box">
+        <p>But the tide rose higher than their cries</p>
+        <p>The sun burned fierce beneath their eyes</p>
+        <p>The border stretched beyond their will</p>
+        <p>And silence waits for them still</p>
+      </div>
+      <div class="visual-box">
+        <svg id="vis5" width="960" height="600"></svg>
+      </div>
+    </section>
 
-          <!-- Verse 7 -->
-          <ul class="verse" id="verse7">
-            <li class="line">The sea took them in</li>
-            <li class="line">No names. No papers. No protest.</li>
-            <li class="line">No appeals could be chased</li>
-            <li class="line">No fingerprints could be traced</li>
-          </ul>
+    <!-- Slide 5: Verses 6 + 7 -->
+    <section class="full-slide content-slide">
+      <div class="poem-box">
+        <p>The border counted them once</p>
+        <p>Trespassers. Statistics. Infractions.</p>
+        <p>A file opened, a number assigned</p>
+        <p>A case closed before the ink had dried</p>
+      </div>
+      <div class="visual-box">
+        <svg id="vis6" width="960" height="600"></svg>
+      </div>
+    </section>
 
-          <!-- Verse 8 -->
-          <ul class="verse" id="verse8">
-            <li class="line">A boat overturned, but the logs show none</li>
-            <li class="line">A child disappeared, but the ledger reads one</li>
-            <li class="line">A man begged for water, but the form was denied</li>
-            <li class="line">A body was buried, but no one cried</li>
-          </ul>
 
-          <!-- Verse 9 -->
-          <ul class="verse" id="verse9">
-            <li class="line">We do not count them unless they belong</li>
-            <li class="line">We do not grieve them unless they are strong</li>
-            <li class="line">We do not mourn them unless they exist</li>
-            <li class="line">And so they vanish, dismissed</li>
-          </ul>
-
-          <!-- Verse 10 -->
-          <ul class="verse" id="verse10">
-            <li class="line">Vanished once, where no one can see</li>
-            <li class="line">Vanished twice, from history</li>
-            <li class="line">Stamped and erased</li>
-            <li class="line">Filed and replaced</li>
-          </ul>
-
-          <!-- Verse 11 -->
-          <ul class="verse" id="verse11">
-            <li class="line">But we will not move on</li>
-            <li class="line">We will not forget the hands that reached for a future</li>
-            <li class="line">And were met with waves that did not care</li>
-            <li class="line">Gates that did not open</li>
-            <li class="line">Land that did not dare</li>
-          </ul>
-
-          <!-- Verse 12 -->
-          <ul class="verse" id="verse12">
-            <li class="line">We will carve their names into the sky</li>
-            <li class="line">Let the stars hold them high</li>
-            <li class="line">Let the earth remember their weight</li>
-            <li class="line">Let the wind echo their fate</li>
-          </ul>
-
-          <!-- Verse 13 -->
-          <ul class="verse" id="verse13">
-            <li class="line">So even if they are lost</li>
-            <li class="line">They are never truly gone.</li>
-          </ul>
-
-          <div class="filler-verse"></div>
+    <section class="full-slide content-slide">
+        <div class="poem-box">
+            <p>The sea took them in</p>
+            <p>No names. No papers. No protest.</p>
+            <p>No appeals could be chased</p>
+            <p>No fingerprints could be traced</p>
         </div>
+        <div class="visual-box">
+          <svg id="vis6" width="960" height="600"></svg>
+        </div>
+      </section>
+
+    <!-- TRANSITION SLIDE – Verse 8 -->
+    <section class="full-slide transition-slide">
+      <div class="poem-box transition">
+        <p>A boat overturned, but the logs show none</p>
+        <p>A child disappeared, but the ledger reads one</p>
+        <p>A man begged for water, but the form was denied</p>
+        <p>A body was buried, but no one cried</p>
       </div>
+    </section>
 
-      <div class="right-column">
-        <svg id="svg"></svg>
+    <!-- Slide 6: Verses 9 + 11 -->
+    <section class="full-slide content-slide">
+      <div class="poem-box">
+        <p>We do not count them unless they belong</p>
+        <p>We do not grieve them unless they are strong</p>
+        <p>We do not mourn them unless they exist</p>
+        <p>And so they vanish, dismissed</p>
       </div>
-    </main>
+      <div class="visual-box">
+        <svg id="vis7" width="960" height="600"></svg>
+      </div>
+    </section>
 
-    <footer>
-      <button class="arrow-button" id="backward-button">◄</button>
-      <button class="arrow-button" id="forward-button">►</button>
-    </footer>
+    <section class="full-slide content-slide">
+        <div class="poem-box">
+            <p>Vanished once, where no one can see</p>
+            <p>Vanished twice, from history</p>
+            <p>Stamped and erased</p>
+            <p>Filed and replaced</p>
+        </div>
+        <div class="visual-box">
+          <svg id="vis7" width="960" height="600"></svg>
+        </div>
+    </section>
 
-    <script src="main.js"></script>
-  </body>
+    <section class="full-slide content-slide">
+        <div class="poem-box">
+            <p>But we will not move on</p>
+            <p>We will not forget the hands that reached for a future</p>
+            <p>And were met with waves that did not care</p>
+            <p>Gates that did not open</p>
+            <p>Land that did not dare</p>
+        </div>
+        <div class="visual-box">
+          <svg id="vis7" width="960" height="600"></svg>
+        </div>
+    </section>
+
+    <section class="full-slide transition-slide">
+        <div class="poem-box transition">
+            <p>We will carve their names into the sky</p>
+            <p>Let the stars hold them high</p>
+            <p>Let the earth remember their weight</p>
+            <p>Let the wind echo their fate</p>
+            <br />
+            <p>So even if they are lost</p>
+            <p><strong>They are never truly gone.</strong></p>
+        </div>
+      </section>
+
+  
+
+  </main>
+
+  <script src="main.js"></script>
+</body>
 </html>
