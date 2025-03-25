@@ -11,11 +11,55 @@ body, html {
   background-color: #f9f9f9;
   color: #222222;
   scroll-behavior: smooth;
+  height: 100%;
+  overflow-x: hidden;
+}
+
+.progress-timeline {
+  position: fixed;
+  bottom: 20px;
+  left: 0;
+  width: 100%;
+  z-index: 9999; /* Make sure it's on top of everything */
+  display: flex;
+  justify-content: center;
+  pointer-events: none; /* lets clicks pass through where needed */
+}
+
+
+.timeline-container {
+  background-color: #eeeeee25;
+  padding: 0.5rem 1rem;
+  border-radius: 30px;
+  display: flex;
+  gap: 1rem;
+  box-shadow: 0 0 8px rgba(0,0,0,0.1);
+  pointer-events: auto; /* so the dots are clickable */
+}
+
+.timeline-node {
+  width: 30px;
+  height: 30px;
+  background-color: #bbb;
+  color: white;
+  font-weight: bold;
+  border-radius: 50%;
+  text-align: center;
+  line-height: 30px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  user-select: none;
+}
+
+.timeline-node:hover,
+.timeline-node.active {
+  background-color: #7d4d57;
+  transform: scale(1.1);
 }
 
 /* === INTRO SECTION === */
 .intro {
-  background-color: #2f1e22;
+  background-color: #3d252a;
   color: white;
   display: flex;
   justify-content: center;
@@ -69,7 +113,7 @@ body, html {
 }
 
 .transition-slide .poem-box {
-  border: 3px solid #b33a3a;
+  border: 3px solid #7d4d57;
   background-color: #fff2f2;
   padding: 2rem;
   max-width: 700px;
@@ -78,27 +122,6 @@ body, html {
   text-align: center;
   box-shadow: 0 0 10px rgba(0,0,0,0.1);
 }
-
-.closing-slide {
-  background-color: #f2f2f2;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  text-align: center;
-  padding: 3rem;
-}
-
-.closing-poem-box {
-  max-width: 700px;
-  background-color: #fff;
-  border-left: 6px solid #333;
-  padding: 3rem 2rem;
-  font-size: 1.5rem;
-  line-height: 2.2;
-  box-shadow: 0 0 20px rgba(0, 0, 0, 0.05);
-  font-style: italic;
-}
-
 
 /* === LAYOUT BOXES === */
 .poem-box {
