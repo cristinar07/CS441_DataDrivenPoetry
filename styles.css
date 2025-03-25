@@ -109,3 +109,27 @@
     background-color: #c0392b;
   }
   
+  .verse {
+    font-size: 2em;
+    list-style-type: none;
+    padding: 0px;
+    font-weight: 100;
+    color: #ddd;
+  }
+  
+  svg {
+    background-color: #444;
+  }
+  
+  .active-verse {
+    font-weight: 900;
+    color: #555;
+  }
+  
+  .active-line {
+    color: black;
+  }
+  
+  .filler-verse {
+    height: 500px;
+  }
