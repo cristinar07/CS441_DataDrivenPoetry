@@ -134,15 +134,13 @@ let vis1Path;
     scrollIndicator.addEventListener("click", () => drawKeyframe(0));
   }
 
-
-  
   async function drawVis1() {
     const svg = d3.select("#vis1")
-    .attr("viewBox", [0, 0, 960, 600])
-    .attr("preserveAspectRatio", "xMidYMid meet");
+      .attr("viewBox", [0, 0, 960, 600])
+      .attr("preserveAspectRatio", "xMidYMid meet");
+  
     vis1Svg = svg;
   
-    // First time only: setup map and data
     if (!vis1Initialized) {
       svg.selectAll("*").remove();
   
@@ -157,6 +155,7 @@ let vis1Path;
       const world = await d3.json("https://cdn.jsdelivr.net/npm/world-atlas@2/countries-110m.json");
       const countries = topojson.feature(world, world.objects.countries);
   
+      // Background map
       svg.append("g")
         .selectAll("path")
         .data(countries.features)
@@ -165,7 +164,8 @@ let vis1Path;
         .attr("stroke", "#999")
         .attr("stroke-width", 0.5)
         .attr("d", vis1Path);
-
+  
+      // Title
       svg.append("text")
         .attr("x", width / 2)
         .attr("y", 30)
@@ -175,6 +175,20 @@ let vis1Path;
         .style("font-weight", "bold")
         .text("Migrant Routes");
   
+      // Define arrow marker
+      svg.append("defs").append("marker")
+        .attr("id", "arrowhead")
+        .attr("viewBox", "-5 -5 10 10")
+        .attr("refX", 0)
+        .attr("refY", 0)
+        .attr("markerWidth", 6)
+        .attr("markerHeight", 6)
+        .attr("orient", "auto")
+        .append("path")
+        .attr("d", "M -4,-2 L 0,0 L -4,2")
+        .attr("fill", "#80383d")
+        .attr("opacity", 0.7);
+  
       const data = await d3.csv("final_missing_migrants_preprocessed.csv");
   
       vis1Journeys = data.map(d => {
@@ -183,7 +197,6 @@ let vis1Path;
         const destCoords = d["Coordinates"]?.split(",").map(c => +c.trim());
         if (!destCoords || destCoords.length !== 2) return null;
         const destLat = destCoords[0], destLon = destCoords[1];
-  
         if ([originLat, originLon, destLat, destLon].some(isNaN)) return null;
   
         return {
@@ -192,6 +205,7 @@ let vis1Path;
         };
       }).filter(Boolean);
   
+      // Split into animation batches
       const batchSize = 100;
       for (let i = 0; i < vis1Journeys.length; i += batchSize) {
         vis1Batches.push(vis1Journeys.slice(i, i + batchSize));
@@ -200,7 +214,7 @@ let vis1Path;
       vis1Initialized = true;
     }
   
-    // Animate current batch (looped interval)
+    // Animate batch with arcs and arrowheads
     let batchIndex = 0;
   
     function drawBatch(index) {
@@ -208,27 +222,41 @@ let vis1Path;
   
       const batch = vis1Batches[index];
   
-      const paths = svg.selectAll(".journey")
+      svg.selectAll(".journey")
         .data(batch)
         .enter()
         .append("path")
         .attr("class", "journey")
         .attr("fill", "none")
-        .attr("stroke", "crimson")
-        .attr("stroke-opacity", 0)
-        .attr("stroke-width", 1.2)
-        .attr("d", d => vis1Path({
-          type: "LineString",
-          coordinates: [d.origin, d.destination]
-        }));
+        .attr("stroke", "#80383d")
+        .attr("stroke-opacity", 0.4)
+        .attr("stroke-width", 1.5)
+        .attr("marker-end", "url(#arrowhead)")
+        .attr("d", d => {
+          // Generate curved arc path
+          const source = vis1Projection(d.origin);
+          const target = vis1Projection(d.destination);
+          const dx = target[0] - source[0];
+          const dy = target[1] - source[1];
+          const dr = Math.sqrt(dx * dx + dy * dy) * 1.5;
   
-      paths.transition()
-        .duration(600)
-        .attr("stroke-opacity", 0.8)
+          return `M${source[0]},${source[1]} A${dr},${dr} 0 0,1 ${target[0]},${target[1]}`;
+        })
+        .attr("stroke-dasharray", function() {
+          const len = this.getTotalLength();
+          return `${len} ${len}`;
+        })
+        .attr("stroke-dashoffset", function() {
+          return this.getTotalLength();
+        })
+        .transition()
+        .duration(2000)
+        .ease(d3.easeLinear)
+        .attr("stroke-dashoffset", 0)
         .transition()
         .delay(2000)
-        .duration(600)
-        .attr("stroke-opacity", 0);
+        .duration(1000)
+        .style("opacity", 0);
     }
   
     drawBatch(batchIndex);
@@ -238,8 +266,9 @@ let vis1Path;
     vis1Interval = setInterval(() => {
       batchIndex = (batchIndex + 1) % vis1Batches.length;
       drawBatch(batchIndex);
-    }, 3200);
+    }, 3500);
   }
+
 
 
   async function drawVis12() {
