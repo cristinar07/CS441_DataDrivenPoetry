@@ -93,13 +93,17 @@ body, html {
 
 /* === SCROLL SLIDES === */
 .full-slide {
-  height: 100vh;
+  min-height: 100vh;           /* allow it to grow if needed */
   display: flex;
   flex-direction: row;
   align-items: center;
   justify-content: center;
   padding: 2rem;
+  box-sizing: border-box;
+  flex-wrap: wrap;             /* ensures it wraps on smaller screens */
+  overflow-x: hidden;          /* prevent horizontal scroll */
 }
+
 
 .content-slide {
   background-color: #fff;
