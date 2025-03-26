@@ -898,7 +898,29 @@ function highlightBar(causes, svgId, color) {
   });
 }
 
+// Scroll-based verse detection
+const verseSections = document.querySelectorAll(".full-slide");
 
+const observerOptions = {
+  root: null,
+  threshold: 0.5 // Trigger when 50% of the section is in view
+};
+
+const observer = new IntersectionObserver((entries) => {
+  entries.forEach(entry => {
+    if (entry.isIntersecting) {
+      const verseId = entry.target.id; // e.g., 'verse3'
+      const verseNum = parseInt(verseId.replace("verse", ""));
+      const frameIndex = keyframes.findIndex(kf => kf.activeVerse === verseNum);
+      if (frameIndex !== -1 && frameIndex !== keyframeIndex) {
+        drawKeyframe(frameIndex);
+      }
+    }
+  });
+}, observerOptions);
+
+// Start observing each verse section
+verseSections.forEach(section => observer.observe(section));
 
 
 async function initialise() {
