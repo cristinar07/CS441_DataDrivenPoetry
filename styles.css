@@ -162,3 +162,8 @@ svg {
 .scrollytelling-container {
   width: 100%;
 }
+
+.bold-word {
+  font-weight: bold;
+  color: #ff6347; /* Optional: Color the bolded word */
+}

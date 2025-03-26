@@ -1,19 +1,87 @@
 let keyframes = [
-  { activeVerse: 1, activeLines: [1, 2, 3, 4], svgUpdate: () => drawVis1() },
-  { activeVerse: 2, activeLines: [1, 2, 3, 4], svgUpdate: () => drawVis12() },
-  { activeVerse: 3, activeLines: [1, 2, 3, 4], svgUpdate: () => drawVis13() },
-  { activeVerse: 4, activeLines: [1, 2, 3, 4] },
-  { activeVerse: 5, activeLines: [1, 2, 3, 4], svgUpdate: () => drawVis2() },
-  { activeVerse: 6, activeLines: [1, 2, 3, 4], svgUpdate: () => drawVis2() },
-  { activeVerse: 7, activeLines: [1, 2, 3, 4], svgUpdate: () => drawVis2() },
-  { activeVerse: 8, activeLines: [1, 2, 3, 4] },
-  { activeVerse: 9, activeLines: [1, 2, 3, 4], svgUpdate: () => drawVis3() },
-  { activeVerse: 10, activeLines: [1, 2, 3, 4], svgUpdate: () => drawVis3() },
-  { activeVerse: 11, activeLines: [1, 2, 3, 4, 5], svgUpdate: () => drawVis3() },
-  { activeVerse: 12, activeLines: [1, 2, 3, 4, 5, 6] }
+  { 
+    activeVerse: 1, 
+    activeLines: [1, 2, 3, 4],
+    svgUpdate: () => drawVis1() 
+  },
+  { 
+    activeVerse: 2, 
+    activeLines: [1, 2, 3, 4],
+    svgUpdate: () => drawVis12() 
+  },
+  { 
+    activeVerse: 3, 
+    activeLines: [1, 2, 3, 4], 
+    svgUpdate: () => drawVis13() 
+  },
+  { 
+    activeVerse: 4, 
+    activeLines: [1, 2, 3, 4] 
+  },
+  { 
+    activeVerse: 5, 
+    activeLines: [1, 2, 3, 4], 
+    svgUpdate: () => {
+      createBarGraph(CauseDeathData, "#vis5");
+      boldWord("tide rose higher", "#006400");
+      boldWord("sun burned fierce", "#006400");
+      boldWord("beyond their will", "#006400");
+      highlightBar("Harsh environmental conditions ", "#vis5", "#006400");
+    }
+  },
+  { 
+    activeVerse: 6, 
+    activeLines: [1, 2, 3, 4], 
+    svgUpdate: () => {
+      createBarGraph(CauseDeathData, "#vis6");
+      boldWord("Trespassers", "#8B0000");
+      boldWord("Statistics", "#8B0000");
+      boldWord("Infractions", "#8B0000");
+      highlightBar(["Violence", "Mixed or unknown", "Vehicle accident "], "#vis6", "#8B0000");
+    }
+  },
+  { 
+    activeVerse: 7, 
+    activeLines: [1, 2, 3, 4], 
+    svgUpdate: () => {
+      createBarGraph(CauseDeathData, "#vis7");
+      boldWord("sea", "#00008b");
+      highlightBar("Drowning", "#vis7", "#00008b");
+    }
+  },
+  { 
+    activeVerse: 8, 
+    activeLines: [1, 2, 3, 4] 
+  },
+  { 
+    activeVerse: 9, 
+    activeLines: [1, 2, 3, 4], 
+    svgUpdate: () => drawTimelineGraph(TimelineData, 2014, "vis9")  // Default to 2014 initially
+  },
+  { 
+    activeVerse: 10, 
+    activeLines: [1, 2, 3, 4], 
+    svgUpdate: () => drawTimelineGraph(TimelineData, 2019, "vis10")  // 5 years later
+
+  },
+  { 
+    activeVerse: 11, 
+    activeLines: [1, 2, 3, 4, 5], 
+    svgUpdate: () => drawTimelineGraph(TimelineData, 2024, "vis11")  // Close to recent years
+
+  },
+  { 
+    activeVerse: 12, 
+    activeLines: [1, 2, 3, 4, 5, 6] 
+  }
 ];
+let svg = d3.select("#svg");
+const width = 500;
+const height = 400;
 
 let keyframeIndex = 0;
+let CauseDeathData;
+let TimelineData;
 
 let vis1Initialized = false;
 let vis1Interval;
@@ -454,6 +522,357 @@ let vis1Path;
   
   
   
-function drawVis2() { console.log("Draw Vis 2"); }
-function drawVis3() { console.log("Draw Vis 3"); }
+ // Declare 'svg' inside the initialiseSVG function
+ function initialiseSVG() {
+  const svg = d3.select("#svg"); // Ensure svg is initialized here
 
+  svg.attr("width", width);
+  svg.attr("height", height);
+
+  svg.selectAll("*").remove();
+
+  const margin = { top: 30, right: 30, bottom: 50, left: 50 };
+  chartWidth = width - margin.left - margin.right;
+  chartHeight = height - margin.top - margin.bottom;
+
+  chart = svg.append("g")
+      .attr("transform", "translate(" + margin.left + "," + margin.top + ")");
+
+  xScale = d3.scaleBand()
+      .domain([])
+      .range([0, chartWidth])
+      .padding(0.1);
+
+  yScale = d3.scaleLinear()
+      .domain([])
+      .nice()
+      .range([chartHeight, 0]);
+
+  // Add x-axis
+  chart.append("g")
+      .attr("class", "x-axis")
+      .attr("transform", `translate(0,${chartHeight})`)
+      .call(d3.axisBottom(xScale))
+      .selectAll("text");
+      
+
+  // Add y-axis
+  chart.append("g")
+      .attr("class", "y-axis")
+      .call(d3.axisLeft(yScale))
+      .selectAll("text");
+
+  // Add title
+  svg.append("text")
+      .attr("id", "chart-title")
+      .attr("x", width / 2)
+      .attr("y", 20)
+      .attr("text-anchor", "middle")
+      .style("font-size", "12px")
+      .style("fill", "white")
+      .text("");
+}
+
+function createBarGraph(data, svgId) {
+  const width = 800, height = 600; // Smaller width and height
+  const margin = { top: 30, right: 30, bottom: 150, left: 50 }; // Increased bottom margin for labels
+
+  const svg = d3.select(svgId)
+    .attr("width", width)
+    .attr("height", height);
+
+  // Define Scales
+  const x = d3.scaleBand()
+    .domain(data.map(d => d.cause))
+    .range([margin.left, width - margin.right])
+    .padding(0.2);
+
+  const y = d3.scaleLinear()
+    .domain([0, d3.max(data, d => d.count)])
+    .nice()
+    .range([height - margin.bottom, margin.top]);
+
+  // Create Axes
+  svg.append("g")
+    .attr("transform", `translate(0,${height - margin.bottom})`)
+    .call(d3.axisBottom(x))
+    .selectAll("text")
+    .attr("transform", "rotate(-45)") // Rotate x-axis labels for better readability
+    .style("text-anchor", "end");
+
+  svg.append("g")
+    .attr("transform", `translate(${margin.left},0)`)
+    .call(d3.axisLeft(y));
+
+  // Add Chart Title
+  svg.append("text")
+    .attr("x", width / 2)
+    .attr("y", margin.top / 2)
+    .attr("text-anchor", "middle")
+    .style("font-size", "16px")
+    .style("font-weight", "bold")
+    .text("Cause of Death Statistics");
+
+  // Create Bars
+  svg.selectAll(".bar")
+    .data(data)
+    .enter()
+    .append("rect")
+    .attr("class", "bar")
+    .attr("x", d => x(d.cause))
+    .attr("y", d => y(d.count))
+    .attr("width", x.bandwidth())
+    .attr("height", d => height - margin.bottom - y(d.count))
+    .attr("fill", "#7d4d57")
+    .on("mouseover", function(event, d) {
+        d3.select(this).transition().attr("r", 6).attr("fill", "darkred");
+
+        // Show the tooltip on hover
+        tooltip.style("visibility", "visible")
+               .html(`Cause: ${d.cause}<br>Count: ${d.count}`)
+               .style("top", (event.pageY - 30) + "px")
+               .style("left", (event.pageX + 10) + "px");
+    })
+    .on("mousemove", function(event) {
+        tooltip.style("top", (event.pageY - 30) + "px")
+               .style("left", (event.pageX + 10) + "px");
+    })
+    .on("mouseout", function() {
+        d3.select(this).transition().attr("r", 4).attr("fill", "#7d4d57");
+        tooltip.style("visibility", "hidden");
+    });
+
+  // Tooltip div (hidden initially)
+  const tooltip = d3.select("body").append("div")
+    .attr("class", "tooltip")
+    .style("position", "absolute")
+    .style("background", "rgba(0, 0, 0, 0.7)")
+    .style("color", "#fff")
+    .style("padding", "6px 10px")
+    .style("border-radius", "5px")
+    .style("font-size", "12px")
+    .style("pointer-events", "none")
+    .style("visibility", "hidden");
+}
+
+
+
+
+async function loadData() {
+  await d3.csv("final_missing_migrants_preprocessed.csv").then(function(data) {
+    console.log("CSV Data Loaded:", data);
+    
+    // Process data (Example: Counting deaths by cause)
+    const causeCounts = d3.rollup(data, v => v.length, d => d["Cause of Death"]);
+  
+    // Convert Map to Array for D3
+    const formattedData = Array.from(causeCounts, ([cause, count]) => ({ cause, count }));
+    formattedData.pop();
+
+    formattedData.forEach(function(d) {
+      d.cause = d.cause.split('/')[0]; // Keep only the part before '/'
+    });
+  
+    
+    CauseDeathData = formattedData;
+
+    console.log("CSV Raw Data:", data.slice(0, 5)); // Print first 5 rows to check column names
+
+    // Ensure correct column names
+    const yearCol = "Incident Year";  // Correct column name
+    const monthCol = "Month";         // Correct column name
+    const deathsCol = "Total Number of Dead and Missing"; 
+
+    // Convert values to numbers
+    data.forEach(d => {
+      d[yearCol] = +d[yearCol]; // Convert year to number
+      d[monthCol] = +d[monthCol]; // Convert month to number
+      d[deathsCol] = +d[deathsCol] || 0; // Convert deaths to number, default to 0
+    });
+
+    // Process Timeline Data (Grouping by Year and Month)
+    const groupedData = d3.rollup(
+      data, 
+      v => d3.sum(v, d => d[deathsCol]), // Sum deaths per month
+      d => d[yearCol], 
+      d => d[monthCol]
+    );
+
+    // Convert Map to Array
+    TimelineData = [];
+    groupedData.forEach((months, year) => {
+      months.forEach((total, month) => {
+        TimelineData.push({
+          year: year,
+          month: month,
+          total_deaths_missing: total
+        });
+      });
+    });
+
+    console.log("Processed Data", TimelineData);
+
+  }).catch(function(error) {
+    console.error("Error loading CSV:", error);
+  });
+  
+}
+
+function drawTimelineGraph(data, selectedYear, svgId) {
+  const width = 800, height = 600;  // Match createBarGraph
+  const margin = { top: 50, right: 100, bottom: 80, left: 50 }; // Adjusted top and right margins
+
+  // Select the SVG element and clear previous content
+  const svg = d3.select(`#${svgId}`);
+  svg.selectAll("*").remove();
+  svg.attr("width", width).attr("height", height);
+
+  // Filter and SORT data for the selected year by month
+  const yearData = data.filter(d => d.year === selectedYear).sort((a, b) => a.month - b.month);
+
+  console.log("Sorted Year Data:", yearData); // Debugging check
+
+  // Define scales
+  const x = d3.scaleBand()
+      .domain(d3.range(1, 13)) // Months 1-12
+      .range([margin.left, width - margin.right])
+      .padding(0.1);
+
+  const y = d3.scaleLinear()
+      .domain([0, d3.max(yearData, d => d.total_deaths_missing) || 10]) // Ensure valid range
+      .nice()
+      .range([height - margin.bottom, margin.top]);
+
+  // Add Title
+  svg.append("text")
+      .attr("x", width / 2)
+      .attr("y", 20)
+      .attr("text-anchor", "middle")
+      .style("font-size", "18px")
+      .style("font-weight", "bold")
+      .text("Monthly Deaths and Missing Migrants");
+
+  // Display Selected Year in Top Right Corner
+  svg.append("text")
+      .attr("x", width - margin.right)
+      .attr("y", 20)
+      .attr("text-anchor", "end")
+      .style("font-size", "16px")
+      .style("fill", "gray")
+      .text(`Year: ${selectedYear}`);
+
+  // Add Axes
+  svg.append("g")
+      .attr("transform", `translate(0,${height - margin.bottom})`)
+      .call(d3.axisBottom(x).tickFormat(d => d3.timeFormat("%b")(new Date(2024, d - 1, 1))))
+      .selectAll("text")
+      .attr("transform", "rotate(-45)")
+      .style("text-anchor", "end");
+
+  svg.append("g")
+      .attr("transform", `translate(${margin.left},0)`)
+      .call(d3.axisLeft(y));
+
+  // Define line generator
+  const line = d3.line()
+      .x(d => x(d.month) + x.bandwidth() / 2)  // Center line on month bands
+      .y(d => y(d.total_deaths_missing))
+      .curve(d3.curveMonotoneX);  // Smooth curve
+
+  // Draw the line
+  svg.append("path")
+      .datum(yearData)
+      .attr("fill", "none")
+      .attr("stroke", "steelblue")
+      .attr("stroke-width", 3)
+      .attr("d", line);
+
+  // Tooltip div (hidden initially)
+  const tooltip = d3.select("body").append("div")
+      .attr("class", "tooltip")
+      .style("position", "absolute")
+      .style("background", "rgba(0, 0, 0, 0.7)")
+      .style("color", "#fff")
+      .style("padding", "6px 10px")
+      .style("border-radius", "5px")
+      .style("font-size", "12px")
+      .style("pointer-events", "none")
+      .style("visibility", "hidden");
+
+  // Add points on the line with hover interaction
+  svg.selectAll(".dot")
+      .data(yearData)
+      .enter()
+      .append("circle")
+      .attr("class", "dot")
+      .attr("cx", d => x(d.month) + x.bandwidth() / 2)
+      .attr("cy", d => y(d.total_deaths_missing))
+      .attr("r", 5)
+      .attr("fill", "red")
+      .on("mouseover", function(event, d) {
+          d3.select(this).transition().attr("r", 8).attr("fill", "darkred");
+
+          tooltip.style("visibility", "visible")
+                 .html(`<strong>${d3.timeFormat("%B")(new Date(2024, d.month - 1, 1))}</strong>: ${d.total_deaths_missing} deaths`)
+                 .style("top", (event.pageY - 30) + "px")
+                 .style("left", (event.pageX + 10) + "px");
+      })
+      .on("mousemove", function(event) {
+          tooltip.style("top", (event.pageY - 30) + "px")
+                 .style("left", (event.pageX + 10) + "px");
+      })
+      .on("mouseout", function() {
+          d3.select(this).transition().attr("r", 5).attr("fill", "red");
+          tooltip.style("visibility", "hidden");
+      });
+}
+
+
+
+function boldWord(word, color) {
+  // Select all paragraphs in the poem
+  const paragraphs = document.querySelectorAll(".poem-box p");
+
+  paragraphs.forEach(p => {
+    // Check if the word exists in the paragraph
+    const regex = new RegExp(`(${word})`, 'gi'); // Case-insensitive search
+    p.innerHTML = p.innerHTML.replace(regex, '<span class="bold-word">$1</span>');
+  });
+
+  // Apply bold styling to the selected word (you can style this class)
+  const boldWords = document.querySelectorAll(".bold-word");
+  boldWords.forEach(boldWord => {
+    boldWord.style.fontWeight = 'bold'; // Apply bold styling
+    boldWord.style.color = color; // Apply a specific color
+  });
+}
+
+function highlightBar(causes, svgId, color) {
+  // Ensure causes is always an array (handle single or multiple cases)
+  const causesArray = Array.isArray(causes) ? causes : [causes];
+
+  // Select all bars in the current chart within a specific SVG container
+  const bars = d3.select(svgId).selectAll(".bar");
+
+  // Reset any previous highlights
+  bars.attr("fill", "#7d4d57");  // Default color
+
+  // Iterate over the array of causes and highlight the matching bars
+  causesArray.forEach(cause => {
+    bars.filter(d => d.cause === cause)
+        .attr("fill", color)  // New highlight color
+        .attr("stroke", "#000")   // Optional stroke to make it stand out
+        .attr("stroke-width", 2);  // Optional stroke width for emphasis
+  });
+}
+
+
+
+
+async function initialise() {
+  await loadData();
+  initialiseSVG();
+  drawKeyframe(keyframeIndex);
+}
+
+initialise();
