@@ -333,7 +333,9 @@ let vis1Path;
   }
   
   async function drawVis13() {
-    const svg = d3.select("#vis3");
+    const svg = d3.select("#vis3")
+    .attr("viewBox", [0, 0, 960, 600])
+    .attr("preserveAspectRatio", "xMidYMid meet");
     svg.selectAll("*").remove();
   
     const width = 960;
