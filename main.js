@@ -827,11 +827,13 @@ function drawTimelineGraph(data, selectedYear, svgId) {
       });
 }
 
-
-
 function boldWord(word, color) {
-  // Select all paragraphs in the poem
-  const paragraphs = document.querySelectorAll(".poem-box p");
+  // Get the active verse (it should be a part of the current stanza)
+  const activeVerseId = `verse${keyframeIndex + 1}`; // Get active verse ID based on the current index
+  const verse = document.getElementById(activeVerseId);
+  
+  // Select all paragraphs in the current active verse
+  const paragraphs = verse ? verse.querySelectorAll("p") : [];
 
   paragraphs.forEach(p => {
     // Check if the word exists in the paragraph
@@ -846,6 +848,7 @@ function boldWord(word, color) {
     boldWord.style.color = color; // Apply a specific color
   });
 }
+
 
 function highlightBar(causes, svgId, color) {
   // Ensure causes is always an array (handle single or multiple cases)
