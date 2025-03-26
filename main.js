@@ -1,4 +1,9 @@
 let keyframes = [
+  {
+    activeVerse: 0,
+    activeLines: [], // no lines to highlight
+    svgUpdate: null  // nothing to render here
+  },
   { 
     activeVerse: 1, 
     activeLines: [1, 2, 3, 4],
