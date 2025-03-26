@@ -69,7 +69,9 @@ let vis1Path;
 
   
   async function drawVis1() {
-    const svg = d3.select("#vis1");
+    const svg = d3.select("#vis1")
+    .attr("viewBox", [0, 0, 960, 600])
+    .attr("preserveAspectRatio", "xMidYMid meet");
     vis1Svg = svg;
   
     // First time only: setup map and data
@@ -173,7 +175,9 @@ let vis1Path;
 
 
   async function drawVis12() {
-    const svg = d3.select("#vis2");
+    const svg = d3.select("#vis2")
+    .attr("viewBox", [0, 0, 960, 600])
+    .attr("preserveAspectRatio", "xMidYMid meet");
     svg.selectAll("*").remove();
   
     const width = 960;

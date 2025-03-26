@@ -141,11 +141,14 @@ body, html {
   display: flex;
   justify-content: center;
   align-items: center;
+  max-width: 100%;
+  overflow: hidden;
 }
 
 svg {
   max-width: 100%;
   height: auto;
+  display: block;
   border: 1px solid #ccc;
   background-color: #f5f5f5;
   box-shadow: 0 0 8px rgba(0,0,0,0.05);
