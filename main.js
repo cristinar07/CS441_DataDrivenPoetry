@@ -344,6 +344,9 @@ let vis1Path;
       }
     });
   }
+
+  let vis2Zoom; // Add this line above the function if it's not already global
+
   
   async function drawVis12() {
     const svg = d3.select("#vis2")
@@ -478,7 +481,7 @@ let vis1Path;
       .style("cursor", "pointer")
       .on("click", () => svg.transition().call(zoom.scaleBy, 0.7));
   
-    const zoom = d3.zoom()
+      vis2Zoom = d3.zoom()
       .scaleExtent([1, 10])
       .on("zoom", (event) => {
         g.attr("transform", event.transform);
@@ -489,9 +492,10 @@ let vis1Path;
           g.selectAll(".dot").remove();
           dotVisible = false;
         }
-      });
-  
-    svg.call(zoom);
+    });
+    
+    svg.call(vis2Zoom); // keep this
+    
   }
   
   // Dot renderer
@@ -536,127 +540,20 @@ let vis1Path;
       .on("mouseout", function () {
         tooltip.style("visibility", "hidden");
       });
-  }  
+  } 
   
-  // async function drawVis13() {
-  //   const svg = d3.select("#vis3")
-  // .attr("viewBox", "0 0 960 600")
-  // .attr("preserveAspectRatio", "xMidYMid meet");
-  //   svg.selectAll("*").remove();
+  document.querySelectorAll(".zoom-light").forEach(el => {
+    el.addEventListener("mouseenter", () => {
+      const svg = d3.select("#vis2");
+      // Zoom into Mediterranean region
+      svg.transition().duration(800)
+        .call(vis2Zoom.transform, d3.zoomIdentity.translate(-1500, -500).scale(4.8));
+    });
+  });
   
-  //   const width = 960;
-  //   const height = 600;
   
-  //   const projection = d3.geoNaturalEarth1()
-  //     .scale(160)
-  //     .translate([width / 2, height / 2]);
   
-  //   const path = d3.geoPath().projection(projection);
   
-  //   const world = await d3.json("https://cdn.jsdelivr.net/npm/world-atlas@2/countries-110m.json");
-  //   const countries = topojson.feature(world, world.objects.countries);
-  
-  //   const data = await d3.csv("final_missing_migrants_preprocessed.csv");
-  
-  //   const g = svg.append("g");
-  
-  //   // Base map
-  //   g.selectAll("path")
-  //     .data(countries.features)
-  //     .join("path")
-  //     .attr("fill", "#fae3e0")
-  //     .attr("stroke", "#999")
-  //     .attr("stroke-width", 0.5)
-  //     .attr("d", path);
-  
-  //   // Title
-  //   svg.append("text")
-  //     .attr("x", width / 2)
-  //     .attr("y", 30)
-  //     .attr("text-anchor", "middle")
-  //     .style("font-size", "20px")
-  //     .style("fill", "#3d252a")
-  //     .style("font-weight", "bold")
-  //     .text("Migrant Profiles by Type");
-  
-  //   // Dot drawing
-  //   const dots = data.filter(d => {
-  //     const coords = d["Coordinates"]?.split(",").map(c => +c.trim());
-  //     return coords && coords.length === 2 && !isNaN(coords[0]) && !isNaN(coords[1]);
-  //   });
-  
-  //   g.selectAll("circle")
-  //     .data(dots)
-  //     .enter()
-  //     .append("circle")
-  //     .attr("cx", d => projection([+d["Coordinates"].split(",")[1], +d["Coordinates"].split(",")[0]])[0])
-  //     .attr("cy", d => projection([+d["Coordinates"].split(",")[1], +d["Coordinates"].split(",")[0]])[1])
-  //     .attr("r", 2.5)
-  //     .attr("opacity", 0.65)
-  //     .attr("fill", d => {
-  //       if (+d["Number of Children"] > 0) return "#fcd85d";
-  //       if (+d["Number of Females"] > 0) return "#cc6f73";
-  //       if (+d["Number of Males"] > 0) return "#80383d";
-  //       return "#3d252a";
-  //     });
-  
-  //   // Zoom feature
-  //   const zoom = d3.zoom()
-  //     .scaleExtent([1, 8])
-  //     .on("zoom", (event) => g.attr("transform", event.transform));
-  
-  //   svg.call(zoom);
-  
-  //   // Zoom buttons
-  //   svg.append("text")
-  //     .attr("id", "zoom-in")
-  //     .attr("x", 30)
-  //     .attr("y", height - 70)
-  //     .text("➕")
-  //     .style("font-size", "24px")
-  //     .style("cursor", "pointer")
-  //     .on("click", () => svg.transition().call(zoom.scaleBy, 1.3));
-  
-  //   svg.append("text")
-  //     .attr("id", "zoom-out")
-  //     .attr("x", 30)
-  //     .attr("y", height - 35)
-  //     .text("➖")
-  //     .style("font-size", "24px")
-  //     .style("cursor", "pointer")
-  //     .on("click", () => svg.transition().call(zoom.scaleBy, 0.7));
-  
-  //   // Color Legend
-  //   const legendItems = [
-  //     { label: "Children", color: "#fcd85d" },
-  //     { label: "Women", color: "#cc6f73" },
-  //     { label: "Men", color: "#80383d" },
-  //     { label: "Unknown", color: "#3d252a" }
-  //   ];
-  
-  //   const legendGroup = svg.append("g")
-  //     .attr("transform", `translate(${width - 160}, 60)`);
-  
-  //   legendGroup.selectAll("rect")
-  //     .data(legendItems)
-  //     .enter()
-  //     .append("rect")
-  //     .attr("x", 0)
-  //     .attr("y", (d, i) => i * 20)
-  //     .attr("width", 12)
-  //     .attr("height", 12)
-  //     .attr("fill", d => d.color);
-  
-  //   legendGroup.selectAll("text")
-  //     .data(legendItems)
-  //     .enter()
-  //     .append("text")
-  //     .attr("x", 18)
-  //     .attr("y", (d, i) => i * 20 + 10)
-  //     .text(d => d.label)
-  //     .attr("font-size", "12px")
-  //     .attr("fill", "#3d252a");
-  // }
   async function drawVis13() {
     const svg = d3.select("#vis3")
       .attr("viewBox", "0 0 960 600")
