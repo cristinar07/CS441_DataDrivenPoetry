@@ -189,3 +189,23 @@ svg {
   font-weight: bold;
   color: #ff6347; /* Optional: Color the bolded word */
 }
+
+.verse-lines-pulse {
+  font-weight: bold;
+  color: #80383d;
+  animation: pulseLines 2s ease-in-out infinite;
+}
+
+@keyframes pulseLines {
+  0%, 100% {
+    color: #80383d;
+    text-shadow: none;
+  }
+  50% {
+    color: #690404;
+    text-shadow: 0 0 8px rgba(212, 0, 0, 0.5);
+  }
+}
+
+
+

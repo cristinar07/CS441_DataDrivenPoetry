@@ -139,13 +139,14 @@ let vis1Path;
     scrollIndicator.addEventListener("click", () => drawKeyframe(0));
   }
 
+  let zoomGroup;
+
   async function drawVis1() {
     const svg = d3.select("#vis1")
       .attr("viewBox", [0, 0, 960, 600])
       .attr("preserveAspectRatio", "xMidYMid meet");
   
     vis1Svg = svg;
-  
     if (!vis1Initialized) {
       svg.selectAll("*").remove();
   
@@ -156,12 +157,12 @@ let vis1Path;
         .translate([width / 2, height / 2]);
   
       vis1Path = d3.geoPath().projection(vis1Projection);
+      zoomGroup = svg.append("g").attr("id", "zoom-group");
   
       const world = await d3.json("https://cdn.jsdelivr.net/npm/world-atlas@2/countries-110m.json");
       const countries = topojson.feature(world, world.objects.countries);
   
-      // Background map
-      svg.append("g")
+      zoomGroup.append("g")
         .selectAll("path")
         .data(countries.features)
         .join("path")
@@ -170,17 +171,54 @@ let vis1Path;
         .attr("stroke-width", 0.5)
         .attr("d", vis1Path);
   
-      // Title
       svg.append("text")
+        .attr("id", "vis1-title")
         .attr("x", width / 2)
         .attr("y", 30)
         .attr("text-anchor", "middle")
         .style("font-size", "20px")
         .style("fill", "#3d252a")
-        .style("font-weight", "bold")
-        .text("Migrant Routes");
+        .style("font-weight", "bold");
   
-      // Define arrow marker
+      svg.append("text")
+        .attr("id", "vis1-caption")
+        .attr("x", width / 2)
+        .attr("y", height - 10)
+        .attr("text-anchor", "middle")
+        .style("font-size", "13px")
+        .style("fill", "#444")
+        .text("Each arc represents a migration journey from origin to destination.");
+  
+      svg.append("text")
+        .attr("id", "toggle-animation")
+        .attr("x", 30)
+        .attr("y", 30)
+        .style("font-size", "16px")
+        .style("cursor", "pointer")
+        .style("fill", "#3d252a");
+  
+      svg.append("text")
+        .attr("x", 30)
+        .attr("y", 550)
+        .text("➕")
+        .style("font-size", "22px")
+        .style("cursor", "pointer")
+        .on("click", () => svg.transition().call(zoom.scaleBy, 1.3));
+  
+      svg.append("text")
+        .attr("x", 30)
+        .attr("y", 580)
+        .text("➖")
+        .style("font-size", "22px")
+        .style("cursor", "pointer")
+        .on("click", () => svg.transition().call(zoom.scaleBy, 0.7));
+  
+      const zoom = d3.zoom()
+        .scaleExtent([1, 8])
+        .on("zoom", (event) => zoomGroup.attr("transform", event.transform));
+  
+      svg.call(zoom);
+  
       svg.append("defs").append("marker")
         .attr("id", "arrowhead")
         .attr("viewBox", "-5 -5 10 10")
@@ -194,40 +232,67 @@ let vis1Path;
         .attr("fill", "#80383d")
         .attr("opacity", 0.7);
   
-      const data = await d3.csv("final_missing_migrants_preprocessed.csv");
+      const rawData = await d3.csv("final_missing_migrants_preprocessed.csv");
   
-      vis1Journeys = data.map(d => {
-        const originLat = parseFloat(d["Origin Latitude"]);
-        const originLon = parseFloat(d["Origin Longitude"]);
-        const destCoords = d["Coordinates"]?.split(",").map(c => +c.trim());
-        if (!destCoords || destCoords.length !== 2) return null;
-        const destLat = destCoords[0], destLon = destCoords[1];
-        if ([originLat, originLon, destLat, destLon].some(isNaN)) return null;
+      vis1Batches = d3.group(
+        rawData.map(d => {
+          const originLat = +d["Origin Latitude"];
+          const originLon = +d["Origin Longitude"];
+          const coords = d["Coordinates"]?.split(",").map(c => +c.trim());
+          const year = +d["Incident Year"];
+          if (!coords || coords.length !== 2 || isNaN(originLat) || isNaN(originLon) || isNaN(year)) return null;
+          return {
+            origin: [originLon, originLat],
+            destination: [coords[1], coords[0]],
+            year
+          };
+        }).filter(Boolean),
+        d => d.year
+      );
   
-        return {
-          origin: [originLon, originLat],
-          destination: [destLon, destLat]
-        };
-      }).filter(Boolean);
+      vis1Years = Array.from(vis1Batches.keys()).sort((a, b) => a - b);
+      currentYearIndex = 0;
   
-      // Split into animation batches
-      const batchSize = 100;
-      for (let i = 0; i < vis1Journeys.length; i += batchSize) {
-        vis1Batches.push(vis1Journeys.slice(i, i + batchSize));
+      const dropdown = d3.select("#year-dropdown");
+      if (dropdown.empty()) {
+        svg.append("foreignObject")
+          .attr("x", 750)
+          .attr("y", 20)
+          .attr("width", 180)
+          .attr("height", 40)
+          .append("xhtml:div")
+          .html(`
+            <div style="display:flex; align-items:center; gap:8px;">
+              <label for="year-dropdown" style="font-size:13px;">Jump to:</label>
+              <select id="year-dropdown" style="padding: 4px; font-size:13px; border-radius:4px;"></select>
+            </div>
+          `);
+        const dropdownMenu = d3.select("#year-dropdown");
+        vis1Years.forEach(y => dropdownMenu.append("option").attr("value", y).text(y));
+        dropdownMenu.on("change", function () {
+          const selectedYear = +this.value;
+          currentYearIndex = vis1Years.indexOf(selectedYear);
+          drawYear(selectedYear);
+          clearInterval(vis1Interval);
+          updatePlayButton(true);
+        });
       }
   
       vis1Initialized = true;
     }
   
-    // Animate batch with arcs and arrowheads
-    let batchIndex = 0;
+    function updatePlayButton(paused) {
+      d3.select("#toggle-animation").text(paused ? "▶️ Play" : "⏸ Pause");
+      isPaused = paused;
+    }
   
-    function drawBatch(index) {
-      svg.selectAll(".journey").remove();
+    function drawYear(year) {
+      d3.select("#vis1-title").text(`Global Migrant Journeys (${year})`);
+      d3.select("#year-dropdown").property("value", year);
+      const batch = vis1Batches.get(year) || [];
+      zoomGroup.selectAll(".journey").remove();
   
-      const batch = vis1Batches[index];
-  
-      svg.selectAll(".journey")
+      zoomGroup.selectAll(".journey")
         .data(batch)
         .enter()
         .append("path")
@@ -238,43 +303,49 @@ let vis1Path;
         .attr("stroke-width", 1.5)
         .attr("marker-end", "url(#arrowhead)")
         .attr("d", d => {
-          // Generate curved arc path
           const source = vis1Projection(d.origin);
           const target = vis1Projection(d.destination);
           const dx = target[0] - source[0];
           const dy = target[1] - source[1];
           const dr = Math.sqrt(dx * dx + dy * dy) * 1.5;
-  
           return `M${source[0]},${source[1]} A${dr},${dr} 0 0,1 ${target[0]},${target[1]}`;
         })
-        .attr("stroke-dasharray", function() {
+        .attr("stroke-dasharray", function () {
           const len = this.getTotalLength();
           return `${len} ${len}`;
         })
-        .attr("stroke-dashoffset", function() {
+        .attr("stroke-dashoffset", function () {
           return this.getTotalLength();
         })
         .transition()
         .duration(2000)
         .ease(d3.easeLinear)
-        .attr("stroke-dashoffset", 0)
-        .transition()
-        .delay(2000)
-        .duration(1000)
-        .style("opacity", 0);
+        .attr("stroke-dashoffset", 0);
     }
   
-    drawBatch(batchIndex);
+    function startAnimation() {
+      if (vis1Interval) clearInterval(vis1Interval);
+      vis1Interval = setInterval(() => {
+        currentYearIndex = (currentYearIndex + 1) % vis1Years.length;
+        drawYear(vis1Years[currentYearIndex]);
+      }, 4000);
+      updatePlayButton(false);
+    }
   
-    if (vis1Interval) clearInterval(vis1Interval);
+    drawYear(vis1Years[0]);
+    startAnimation();
   
-    vis1Interval = setInterval(() => {
-      batchIndex = (batchIndex + 1) % vis1Batches.length;
-      drawBatch(batchIndex);
-    }, 3500);
+    d3.select("#toggle-animation").on("click", function () {
+      if (!isPaused) {
+        clearInterval(vis1Interval);
+        updatePlayButton(true);
+      } else {
+        startAnimation();
+      }
+    });
   }
-
-
+  
+   
 
   async function drawVis12() {
     const svg = d3.select("#vis2")
