@@ -345,21 +345,15 @@ let vis1Path;
     });
   }
   
-   
-
   async function drawVis12() {
     const svg = d3.select("#vis2")
-    .attr("viewBox", [0, 0, 960, 600])
-    .attr("preserveAspectRatio", "xMidYMid meet");
+      .attr("viewBox", [0, 0, 960, 600])
+      .attr("preserveAspectRatio", "xMidYMid meet");
+  
     svg.selectAll("*").remove();
   
-    const width = 960;
-    const height = 600;
-  
-    const projection = d3.geoNaturalEarth1()
-      .scale(160)
-      .translate([width / 2, height / 2]);
-  
+    const width = 960, height = 600;
+    const projection = d3.geoNaturalEarth1().scale(160).translate([width / 2, height / 2]);
     const path = d3.geoPath().projection(projection);
   
     const world = await d3.json("https://cdn.jsdelivr.net/npm/world-atlas@2/countries-110m.json");
@@ -374,7 +368,6 @@ let vis1Path;
     );
   
     const maxDeaths = d3.max(Array.from(countryStats.values()));
-  
     const colorBreaks = [10, 100, 500, 1000, 3000, 8000, maxDeaths];
     const customColorScale = d3.scaleThreshold()
       .domain(colorBreaks)
@@ -383,17 +376,24 @@ let vis1Path;
     const g = svg.append("g");
     let dotVisible = false;
   
-    // Draw country map
+    // Country paths
     g.selectAll("path")
       .data(countries.features)
       .join("path")
-      .attr("fill", d => {
-        const deaths = countryStats.get(d.properties.name) || 0;
-        return customColorScale(deaths);
-      })
+      .attr("fill", d => customColorScale(countryStats.get(d.properties.name) || 0))
       .attr("stroke", "#fff")
       .attr("stroke-width", 0.5)
       .attr("d", path)
+      .on("click", function (event, d) {
+        const name = d.properties.name;
+        const deaths = countryStats.get(name) || 0;
+      
+        const infoBox = d3.select("#country-info");
+        infoBox.html(`<strong>${name}</strong><br>${deaths.toLocaleString()} deaths/missing`)
+          .style("top", (event.pageY - 20) + "px")
+          .style("left", (event.pageX + 15) + "px")
+          .style("visibility", "visible");
+      })      
       .append("title")
       .text(d => {
         const name = d.properties.name;
@@ -401,7 +401,7 @@ let vis1Path;
         return `${name}: ${deaths.toLocaleString()} deaths/missing`;
       });
   
-    // Add Title
+    // Title
     svg.append("text")
       .attr("x", width / 2)
       .attr("y", 30)
@@ -409,9 +409,19 @@ let vis1Path;
       .style("font-size", "20px")
       .style("fill", "#3d252a")
       .style("font-weight", "bold")
-      .text("Total Migrant Deaths and Missing by Country");
+      .text("Total Migrant Deaths and Missing by Country (Absolute)");
   
-    // Add Legend
+    // Caption
+    svg.append("text")
+      .attr("id", "vis2-caption")
+      .attr("x", width / 2)
+      .attr("y", height - 8)
+      .attr("text-anchor", "middle")
+      .style("font-size", "13px")
+      .style("fill", "#444")
+      .text("Hover over a country to see numbers. Zoom in to reveal individual cases.");
+  
+    // Legend
     const legendData = customColorScale.range().map((color, i) => {
       const from = i === 0 ? 0 : customColorScale.domain()[i - 1];
       const to = customColorScale.domain()[i] || maxDeaths;
@@ -453,20 +463,18 @@ let vis1Path;
   
     // Zoom buttons
     svg.append("text")
-      .attr("id", "zoom-in")
       .attr("x", 30)
       .attr("y", height - 70)
       .text("➕")
-      .style("font-size", "24px")
+      .style("font-size", "22px")
       .style("cursor", "pointer")
       .on("click", () => svg.transition().call(zoom.scaleBy, 1.3));
   
     svg.append("text")
-      .attr("id", "zoom-out")
       .attr("x", 30)
       .attr("y", height - 35)
       .text("➖")
-      .style("font-size", "24px")
+      .style("font-size", "22px")
       .style("cursor", "pointer")
       .on("click", () => svg.transition().call(zoom.scaleBy, 0.7));
   
@@ -474,8 +482,6 @@ let vis1Path;
       .scaleExtent([1, 10])
       .on("zoom", (event) => {
         g.attr("transform", event.transform);
-  
-        // When zoomed in enough, show dots
         if (event.transform.k > 3 && !dotVisible) {
           drawDotMap(data, g, projection);
           dotVisible = true;
@@ -488,8 +494,19 @@ let vis1Path;
     svg.call(zoom);
   }
   
-  // Dot drawing helper
+  // Dot renderer
   function drawDotMap(data, g, projection) {
+    const tooltip = d3.select("body").append("div")
+      .attr("class", "tooltip")
+      .style("position", "absolute")
+      .style("background", "rgba(0, 0, 0, 0.7)")
+      .style("color", "#fff")
+      .style("padding", "6px 10px")
+      .style("border-radius", "5px")
+      .style("font-size", "12px")
+      .style("pointer-events", "none")
+      .style("visibility", "hidden");
+  
     g.selectAll(".dot")
       .data(data.filter(d => {
         const coords = d["Coordinates"]?.split(",").map(c => +c.trim());
@@ -500,10 +517,26 @@ let vis1Path;
       .attr("class", "dot")
       .attr("cx", d => projection([+d["Coordinates"].split(",")[1], +d["Coordinates"].split(",")[0]])[0])
       .attr("cy", d => projection([+d["Coordinates"].split(",")[1], +d["Coordinates"].split(",")[0]])[1])
-      .attr("r", 1.4)
+      .attr("r", 1.8)
       .attr("fill", "#fcd85d")
-      .attr("opacity", 0.5);
-  }
+      .attr("opacity", 0.6)
+      .on("mouseover", function (event, d) {
+        tooltip.style("visibility", "visible")
+          .html(`
+            <strong>Year:</strong> ${d["Incident Year"]}<br>
+            <strong>Cause:</strong> ${d["Cause of Death"]}<br>
+            <strong>Origin:</strong> ${d["Country of Origin"]}<br>
+            <strong>Location:</strong> ${d["Location of Incident"]}
+          `);
+      })
+      .on("mousemove", function (event) {
+        tooltip.style("top", (event.pageY - 30) + "px")
+          .style("left", (event.pageX + 10) + "px");
+      })
+      .on("mouseout", function () {
+        tooltip.style("visibility", "hidden");
+      });
+  }  
   
   async function drawVis13() {
     const svg = d3.select("#vis3")
