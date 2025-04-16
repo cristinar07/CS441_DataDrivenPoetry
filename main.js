@@ -212,13 +212,14 @@ const warmEarthyColors = [
     scrollIndicator.addEventListener("click", () => drawKeyframe(0));
   }
 
+  let zoomGroup;
+
   async function drawVis1() {
     const svg = d3.select("#vis1")
       .attr("viewBox", [0, 0, 960, 600])
       .attr("preserveAspectRatio", "xMidYMid meet");
   
     vis1Svg = svg;
-  
     if (!vis1Initialized) {
       svg.selectAll("*").remove();
   
@@ -229,12 +230,12 @@ const warmEarthyColors = [
         .translate([width / 2, height / 2]);
   
       vis1Path = d3.geoPath().projection(vis1Projection);
+      zoomGroup = svg.append("g").attr("id", "zoom-group");
   
       const world = await d3.json("https://cdn.jsdelivr.net/npm/world-atlas@2/countries-110m.json");
       const countries = topojson.feature(world, world.objects.countries);
   
-      // Background map
-      svg.append("g")
+      zoomGroup.append("g")
         .selectAll("path")
         .data(countries.features)
         .join("path")
@@ -243,17 +244,54 @@ const warmEarthyColors = [
         .attr("stroke-width", 0.5)
         .attr("d", vis1Path);
   
-      // Title
       svg.append("text")
+        .attr("id", "vis1-title")
         .attr("x", width / 2)
         .attr("y", 30)
         .attr("text-anchor", "middle")
         .style("font-size", "20px")
         .style("fill", "#3d252a")
-        .style("font-weight", "bold")
-        .text("Migrant Routes");
+        .style("font-weight", "bold");
   
-      // Define arrow marker
+      svg.append("text")
+        .attr("id", "vis1-caption")
+        .attr("x", width / 2)
+        .attr("y", height - 10)
+        .attr("text-anchor", "middle")
+        .style("font-size", "13px")
+        .style("fill", "#444")
+        .text("Each arc represents a migration journey from origin to destination.");
+  
+      svg.append("text")
+        .attr("id", "toggle-animation")
+        .attr("x", 30)
+        .attr("y", 30)
+        .style("font-size", "16px")
+        .style("cursor", "pointer")
+        .style("fill", "#3d252a");
+  
+      svg.append("text")
+        .attr("x", 30)
+        .attr("y", 550)
+        .text("➕")
+        .style("font-size", "22px")
+        .style("cursor", "pointer")
+        .on("click", () => svg.transition().call(zoom.scaleBy, 1.3));
+  
+      svg.append("text")
+        .attr("x", 30)
+        .attr("y", 580)
+        .text("➖")
+        .style("font-size", "22px")
+        .style("cursor", "pointer")
+        .on("click", () => svg.transition().call(zoom.scaleBy, 0.7));
+  
+      const zoom = d3.zoom()
+        .scaleExtent([1, 8])
+        .on("zoom", (event) => zoomGroup.attr("transform", event.transform));
+  
+      svg.call(zoom);
+  
       svg.append("defs").append("marker")
         .attr("id", "arrowhead")
         .attr("viewBox", "-5 -5 10 10")
@@ -267,40 +305,67 @@ const warmEarthyColors = [
         .attr("fill", "#80383d")
         .attr("opacity", 0.7);
   
-      const data = await d3.csv("final_missing_migrants_preprocessed.csv");
+      const rawData = await d3.csv("final_missing_migrants_preprocessed.csv");
   
-      vis1Journeys = data.map(d => {
-        const originLat = parseFloat(d["Origin Latitude"]);
-        const originLon = parseFloat(d["Origin Longitude"]);
-        const destCoords = d["Coordinates"]?.split(",").map(c => +c.trim());
-        if (!destCoords || destCoords.length !== 2) return null;
-        const destLat = destCoords[0], destLon = destCoords[1];
-        if ([originLat, originLon, destLat, destLon].some(isNaN)) return null;
+      vis1Batches = d3.group(
+        rawData.map(d => {
+          const originLat = +d["Origin Latitude"];
+          const originLon = +d["Origin Longitude"];
+          const coords = d["Coordinates"]?.split(",").map(c => +c.trim());
+          const year = +d["Incident Year"];
+          if (!coords || coords.length !== 2 || isNaN(originLat) || isNaN(originLon) || isNaN(year)) return null;
+          return {
+            origin: [originLon, originLat],
+            destination: [coords[1], coords[0]],
+            year
+          };
+        }).filter(Boolean),
+        d => d.year
+      );
   
-        return {
-          origin: [originLon, originLat],
-          destination: [destLon, destLat]
-        };
-      }).filter(Boolean);
+      vis1Years = Array.from(vis1Batches.keys()).sort((a, b) => a - b);
+      currentYearIndex = 0;
   
-      // Split into animation batches
-      const batchSize = 100;
-      for (let i = 0; i < vis1Journeys.length; i += batchSize) {
-        vis1Batches.push(vis1Journeys.slice(i, i + batchSize));
+      const dropdown = d3.select("#year-dropdown");
+      if (dropdown.empty()) {
+        svg.append("foreignObject")
+          .attr("x", 750)
+          .attr("y", 20)
+          .attr("width", 180)
+          .attr("height", 40)
+          .append("xhtml:div")
+          .html(`
+            <div style="display:flex; align-items:center; gap:8px;">
+              <label for="year-dropdown" style="font-size:13px;">Jump to:</label>
+              <select id="year-dropdown" style="padding: 4px; font-size:13px; border-radius:4px;"></select>
+            </div>
+          `);
+        const dropdownMenu = d3.select("#year-dropdown");
+        vis1Years.forEach(y => dropdownMenu.append("option").attr("value", y).text(y));
+        dropdownMenu.on("change", function () {
+          const selectedYear = +this.value;
+          currentYearIndex = vis1Years.indexOf(selectedYear);
+          drawYear(selectedYear);
+          clearInterval(vis1Interval);
+          updatePlayButton(true);
+        });
       }
   
       vis1Initialized = true;
     }
   
-    // Animate batch with arcs and arrowheads
-    let batchIndex = 0;
+    function updatePlayButton(paused) {
+      d3.select("#toggle-animation").text(paused ? "▶️ Play" : "⏸ Pause");
+      isPaused = paused;
+    }
   
-    function drawBatch(index) {
-      svg.selectAll(".journey").remove();
+    function drawYear(year) {
+      d3.select("#vis1-title").text(`Global Migrant Journeys (${year})`);
+      d3.select("#year-dropdown").property("value", year);
+      const batch = vis1Batches.get(year) || [];
+      zoomGroup.selectAll(".journey").remove();
   
-      const batch = vis1Batches[index];
-  
-      svg.selectAll(".journey")
+      zoomGroup.selectAll(".journey")
         .data(batch)
         .enter()
         .append("path")
@@ -311,57 +376,60 @@ const warmEarthyColors = [
         .attr("stroke-width", 1.5)
         .attr("marker-end", "url(#arrowhead)")
         .attr("d", d => {
-          // Generate curved arc path
           const source = vis1Projection(d.origin);
           const target = vis1Projection(d.destination);
           const dx = target[0] - source[0];
           const dy = target[1] - source[1];
           const dr = Math.sqrt(dx * dx + dy * dy) * 1.5;
-  
           return `M${source[0]},${source[1]} A${dr},${dr} 0 0,1 ${target[0]},${target[1]}`;
         })
-        .attr("stroke-dasharray", function() {
+        .attr("stroke-dasharray", function () {
           const len = this.getTotalLength();
           return `${len} ${len}`;
         })
-        .attr("stroke-dashoffset", function() {
+        .attr("stroke-dashoffset", function () {
           return this.getTotalLength();
         })
         .transition()
         .duration(2000)
         .ease(d3.easeLinear)
-        .attr("stroke-dashoffset", 0)
-        .transition()
-        .delay(2000)
-        .duration(1000)
-        .style("opacity", 0);
+        .attr("stroke-dashoffset", 0);
     }
   
-    drawBatch(batchIndex);
+    function startAnimation() {
+      if (vis1Interval) clearInterval(vis1Interval);
+      vis1Interval = setInterval(() => {
+        currentYearIndex = (currentYearIndex + 1) % vis1Years.length;
+        drawYear(vis1Years[currentYearIndex]);
+      }, 4000);
+      updatePlayButton(false);
+    }
   
-    if (vis1Interval) clearInterval(vis1Interval);
+    drawYear(vis1Years[0]);
+    startAnimation();
   
-    vis1Interval = setInterval(() => {
-      batchIndex = (batchIndex + 1) % vis1Batches.length;
-      drawBatch(batchIndex);
-    }, 3500);
+    d3.select("#toggle-animation").on("click", function () {
+      if (!isPaused) {
+        clearInterval(vis1Interval);
+        updatePlayButton(true);
+      } else {
+        startAnimation();
+      }
+    });
   }
 
+  let vis2Zoom; // Add this line above the function if it's not already global
 
-
+  
   async function drawVis12() {
     const svg = d3.select("#vis2")
-    .attr("viewBox", [0, 0, 960, 600])
-    .attr("preserveAspectRatio", "xMidYMid meet");
+      .attr("viewBox", [0, 0, 960, 600])
+      .attr("preserveAspectRatio", "xMidYMid meet");
+  
     svg.selectAll("*").remove();
   
-    const width = 960;
-    const height = 600;
-  
-    const projection = d3.geoNaturalEarth1()
-      .scale(160)
-      .translate([width / 2, height / 2]);
-  
+    const width = 960, height = 600;
+    const projection = d3.geoNaturalEarth1().scale(160).translate([width / 2, height / 2]);
     const path = d3.geoPath().projection(projection);
   
     const world = await d3.json("https://cdn.jsdelivr.net/npm/world-atlas@2/countries-110m.json");
@@ -376,7 +444,6 @@ const warmEarthyColors = [
     );
   
     const maxDeaths = d3.max(Array.from(countryStats.values()));
-  
     const colorBreaks = [10, 100, 500, 1000, 3000, 8000, maxDeaths];
     const customColorScale = d3.scaleThreshold()
       .domain(colorBreaks)
@@ -385,17 +452,24 @@ const warmEarthyColors = [
     const g = svg.append("g");
     let dotVisible = false;
   
-    // Draw country map
+    // Country paths
     g.selectAll("path")
       .data(countries.features)
       .join("path")
-      .attr("fill", d => {
-        const deaths = countryStats.get(d.properties.name) || 0;
-        return customColorScale(deaths);
-      })
+      .attr("fill", d => customColorScale(countryStats.get(d.properties.name) || 0))
       .attr("stroke", "#fff")
       .attr("stroke-width", 0.5)
       .attr("d", path)
+      .on("click", function (event, d) {
+        const name = d.properties.name;
+        const deaths = countryStats.get(name) || 0;
+      
+        const infoBox = d3.select("#country-info");
+        infoBox.html(`<strong>${name}</strong><br>${deaths.toLocaleString()} deaths/missing`)
+          .style("top", (event.pageY - 20) + "px")
+          .style("left", (event.pageX + 15) + "px")
+          .style("visibility", "visible");
+      })      
       .append("title")
       .text(d => {
         const name = d.properties.name;
@@ -403,7 +477,7 @@ const warmEarthyColors = [
         return `${name}: ${deaths.toLocaleString()} deaths/missing`;
       });
   
-    // Add Title
+    // Title
     svg.append("text")
       .attr("x", width / 2)
       .attr("y", 30)
@@ -411,9 +485,19 @@ const warmEarthyColors = [
       .style("font-size", "20px")
       .style("fill", "#3d252a")
       .style("font-weight", "bold")
-      .text("Total Migrant Deaths and Missing by Country");
+      .text("Total Migrant Deaths and Missing by Country (Absolute)");
   
-    // Add Legend
+    // Caption
+    svg.append("text")
+      .attr("id", "vis2-caption")
+      .attr("x", width / 2)
+      .attr("y", height - 8)
+      .attr("text-anchor", "middle")
+      .style("font-size", "13px")
+      .style("fill", "#444")
+      .text("Hover over a country to see numbers. Zoom in to reveal individual cases.");
+  
+    // Legend
     const legendData = customColorScale.range().map((color, i) => {
       const from = i === 0 ? 0 : customColorScale.domain()[i - 1];
       const to = customColorScale.domain()[i] || maxDeaths;
@@ -455,29 +539,25 @@ const warmEarthyColors = [
   
     // Zoom buttons
     svg.append("text")
-      .attr("id", "zoom-in")
       .attr("x", 30)
       .attr("y", height - 70)
       .text("➕")
-      .style("font-size", "24px")
+      .style("font-size", "22px")
       .style("cursor", "pointer")
       .on("click", () => svg.transition().call(zoom.scaleBy, 1.3));
   
     svg.append("text")
-      .attr("id", "zoom-out")
       .attr("x", 30)
       .attr("y", height - 35)
       .text("➖")
-      .style("font-size", "24px")
+      .style("font-size", "22px")
       .style("cursor", "pointer")
       .on("click", () => svg.transition().call(zoom.scaleBy, 0.7));
   
-    const zoom = d3.zoom()
+      vis2Zoom = d3.zoom()
       .scaleExtent([1, 10])
       .on("zoom", (event) => {
         g.attr("transform", event.transform);
-  
-        // When zoomed in enough, show dots
         if (event.transform.k > 3 && !dotVisible) {
           drawDotMap(data, g, projection);
           dotVisible = true;
@@ -485,13 +565,25 @@ const warmEarthyColors = [
           g.selectAll(".dot").remove();
           dotVisible = false;
         }
-      });
-  
-    svg.call(zoom);
+    });
+    
+    svg.call(vis2Zoom); // keep this
+    
   }
   
-  // Dot drawing helper
+  // Dot renderer
   function drawDotMap(data, g, projection) {
+    const tooltip = d3.select("body").append("div")
+      .attr("class", "tooltip")
+      .style("position", "absolute")
+      .style("background", "rgba(0, 0, 0, 0.7)")
+      .style("color", "#fff")
+      .style("padding", "6px 10px")
+      .style("border-radius", "5px")
+      .style("font-size", "12px")
+      .style("pointer-events", "none")
+      .style("visibility", "hidden");
+  
     g.selectAll(".dot")
       .data(data.filter(d => {
         const coords = d["Coordinates"]?.split(",").map(c => +c.trim());
@@ -502,15 +594,43 @@ const warmEarthyColors = [
       .attr("class", "dot")
       .attr("cx", d => projection([+d["Coordinates"].split(",")[1], +d["Coordinates"].split(",")[0]])[0])
       .attr("cy", d => projection([+d["Coordinates"].split(",")[1], +d["Coordinates"].split(",")[0]])[1])
-      .attr("r", 1.4)
+      .attr("r", 1.8)
       .attr("fill", "#fcd85d")
-      .attr("opacity", 0.5);
-  }
+      .attr("opacity", 0.6)
+      .on("mouseover", function (event, d) {
+        tooltip.style("visibility", "visible")
+          .html(`
+            <strong>Year:</strong> ${d["Incident Year"]}<br>
+            <strong>Cause:</strong> ${d["Cause of Death"]}<br>
+            <strong>Origin:</strong> ${d["Country of Origin"]}<br>
+            <strong>Location:</strong> ${d["Location of Incident"]}
+          `);
+      })
+      .on("mousemove", function (event) {
+        tooltip.style("top", (event.pageY - 30) + "px")
+          .style("left", (event.pageX + 10) + "px");
+      })
+      .on("mouseout", function () {
+        tooltip.style("visibility", "hidden");
+      });
+  } 
+  
+  document.querySelectorAll(".zoom-light").forEach(el => {
+    el.addEventListener("mouseenter", () => {
+      const svg = d3.select("#vis2");
+      // Zoom into Mediterranean region
+      svg.transition().duration(800)
+        .call(vis2Zoom.transform, d3.zoomIdentity.translate(-1500, -500).scale(4.8));
+    });
+  });
+  
+  
+  
   
   async function drawVis13() {
     const svg = d3.select("#vis3")
-  .attr("viewBox", "0 0 960 600")
-  .attr("preserveAspectRatio", "xMidYMid meet");
+      .attr("viewBox", "0 0 960 600")
+      .attr("preserveAspectRatio", "xMidYMid meet");
     svg.selectAll("*").remove();
   
     const width = 960;
@@ -529,7 +649,7 @@ const warmEarthyColors = [
   
     const g = svg.append("g");
   
-    // Base map
+    // Draw base map
     g.selectAll("path")
       .data(countries.features)
       .join("path")
@@ -548,26 +668,120 @@ const warmEarthyColors = [
       .style("font-weight", "bold")
       .text("Migrant Profiles by Type");
   
-    // Dot drawing
-    const dots = data.filter(d => {
-      const coords = d["Coordinates"]?.split(",").map(c => +c.trim());
-      return coords && coords.length === 2 && !isNaN(coords[0]) && !isNaN(coords[1]);
-    });
+    // Caption
+    svg.append("text")
+      .attr("x", width / 2)
+      .attr("y", height - 15)
+      .attr("text-anchor", "middle")
+      .style("font-size", "13px")
+      .style("fill", "#444")
+      .text("Hover over points to learn more about individual cases");
   
-    g.selectAll("circle")
-      .data(dots)
-      .enter()
-      .append("circle")
-      .attr("cx", d => projection([+d["Coordinates"].split(",")[1], +d["Coordinates"].split(",")[0]])[0])
-      .attr("cy", d => projection([+d["Coordinates"].split(",")[1], +d["Coordinates"].split(",")[0]])[1])
-      .attr("r", 2.5)
-      .attr("opacity", 0.65)
-      .attr("fill", d => {
-        if (+d["Number of Children"] > 0) return "#fcd85d";
-        if (+d["Number of Females"] > 0) return "#cc6f73";
-        if (+d["Number of Males"] > 0) return "#80383d";
-        return "#3d252a";
+    // Tooltip
+    const tooltip = d3.select("body").append("div")
+      .attr("class", "tooltip")
+      .style("position", "absolute")
+      .style("background", "#333")
+      .style("color", "#fff")
+      .style("padding", "6px 10px")
+      .style("border-radius", "4px")
+      .style("font-size", "12px")
+      .style("pointer-events", "none")
+      .style("visibility", "hidden");
+  
+    // Filters
+    const filters = {
+      children: true,
+      women: true,
+      men: true,
+      unknown: true
+    };
+  
+    // Combined checkbox + legend inside SVG
+    svg.append("foreignObject")
+      .attr("x", width - 180)
+      .attr("y", 50)
+      .attr("width", 160)
+      .attr("height", 130)
+      .append("xhtml:div")
+      .style("font-size", "13px")
+      .style("line-height", "1.4")
+      .style("background", "#fff")
+      .style("border", "1px solid #ccc")
+      .style("border-radius", "6px")
+      .style("padding", "8px")
+      .html(`
+        <label><input type="checkbox" id="chk-children" checked /> <span style="color:#fcd85d;">■</span> Children</label><br/>
+        <label><input type="checkbox" id="chk-women" checked /> <span style="color:#cc6f73;">■</span> Women</label><br/>
+        <label><input type="checkbox" id="chk-men" checked /> <span style="color:#80383d;">■</span> Men</label><br/>
+        <label><input type="checkbox" id="chk-unknown" checked /> <span style="color:#3d252a;">■</span> Unknown</label>
+      `);
+  
+    d3.selectAll("#chk-children, #chk-women, #chk-men, #chk-unknown")
+      .on("change", () => {
+        filters.children = d3.select("#chk-children").property("checked");
+        filters.women = d3.select("#chk-women").property("checked");
+        filters.men = d3.select("#chk-men").property("checked");
+        filters.unknown = d3.select("#chk-unknown").property("checked");
+        drawDots();
       });
+  
+    function drawDots() {
+      g.selectAll("circle").remove();
+  
+      const filtered = data.filter(d => {
+        const coords = d["Coordinates"]?.split(",").map(c => +c.trim());
+        if (!coords || coords.length !== 2 || isNaN(coords[0]) || isNaN(coords[1])) return false;
+  
+        const isChild = +d["Number of Children"] > 0;
+        const isWoman = +d["Number of Females"] > 0;
+        const isMan = +d["Number of Males"] > 0;
+  
+        if (isChild && filters.children) return true;
+        if (!isChild && isWoman && filters.women) return true;
+        if (!isChild && !isWoman && isMan && filters.men) return true;
+        if (!isChild && !isWoman && !isMan && filters.unknown) return true;
+        return false;
+      });
+  
+      g.selectAll("circle")
+        .data(filtered)
+        .enter()
+        .append("circle")
+        .attr("cx", d => projection([+d["Coordinates"].split(",")[1], +d["Coordinates"].split(",")[0]])[0])
+        .attr("cy", d => projection([+d["Coordinates"].split(",")[1], +d["Coordinates"].split(",")[0]])[1])
+        .attr("r", 2.2)
+        .attr("fill", d => {
+          if (+d["Number of Children"] > 0) return "#fcd85d";
+          if (+d["Number of Females"] > 0) return "#cc6f73";
+          if (+d["Number of Males"] > 0) return "#80383d";
+          return "#3d252a";
+        })
+        .attr("opacity", 0.7)
+        .on("mouseover", function (event, d) {
+          d3.select(this).attr("stroke", "#000").attr("stroke-width", 1);
+          tooltip.style("visibility", "visible")
+            .html(`
+              <strong>Year:</strong> ${d["Incident Year"]}<br>
+              <strong>Cause:</strong> ${d["Cause of Death"]}<br>
+              <strong>Location:</strong> ${d["Location of Incident"]}<br>
+              <strong>Profile:</strong>
+              ${+d["Number of Children"] > 0 ? "Child" :
+                +d["Number of Females"] > 0 ? "Woman" :
+                +d["Number of Males"] > 0 ? "Man" : "Unknown"}
+            `);
+        })
+        .on("mousemove", event => {
+          tooltip.style("top", (event.pageY - 30) + "px")
+            .style("left", (event.pageX + 15) + "px");
+        })
+        .on("mouseout", function () {
+          d3.select(this).attr("stroke", "none");
+          tooltip.style("visibility", "hidden");
+        });
+    }
+  
+    drawDots();
   
     // Zoom feature
     const zoom = d3.zoom()
@@ -594,37 +808,6 @@ const warmEarthyColors = [
       .style("font-size", "24px")
       .style("cursor", "pointer")
       .on("click", () => svg.transition().call(zoom.scaleBy, 0.7));
-  
-    // Color Legend
-    const legendItems = [
-      { label: "Children", color: "#fcd85d" },
-      { label: "Women", color: "#cc6f73" },
-      { label: "Men", color: "#80383d" },
-      { label: "Unknown", color: "#3d252a" }
-    ];
-  
-    const legendGroup = svg.append("g")
-      .attr("transform", `translate(${width - 160}, 60)`);
-  
-    legendGroup.selectAll("rect")
-      .data(legendItems)
-      .enter()
-      .append("rect")
-      .attr("x", 0)
-      .attr("y", (d, i) => i * 20)
-      .attr("width", 12)
-      .attr("height", 12)
-      .attr("fill", d => d.color);
-  
-    legendGroup.selectAll("text")
-      .data(legendItems)
-      .enter()
-      .append("text")
-      .attr("x", 18)
-      .attr("y", (d, i) => i * 20 + 10)
-      .text(d => d.label)
-      .attr("font-size", "12px")
-      .attr("fill", "#3d252a");
   }
   
   
