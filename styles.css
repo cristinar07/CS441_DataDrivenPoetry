@@ -189,3 +189,8 @@ svg {
   font-weight: bold;
   color: #ff6347; /* Optional: Color the bolded word */
 }
+
+.year-btn {
+  margin: 0.25rem;
+  transition: 0.3s ease;
+}

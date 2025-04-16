@@ -61,18 +61,18 @@ let keyframes = [
   { 
     activeVerse: 9, 
     activeLines: [1, 2, 3, 4], 
-    svgUpdate: () => drawTimelineGraph(TimelineData, 2014, "vis9")  // Default to 2014 initially
+    svgUpdate: () => drawTimelineGraph(TimelineData, selectedYears, "vis9")
   },
   { 
     activeVerse: 10, 
     activeLines: [1, 2, 3, 4], 
-    svgUpdate: () => drawTimelineGraph(TimelineData, 2019, "vis10")  // 5 years later
+    svgUpdate: () => drawVis10() 
 
   },
   { 
     activeVerse: 11, 
     activeLines: [1, 2, 3, 4, 5], 
-    svgUpdate: () => drawTimelineGraph(TimelineData, 2024, "vis11")  // Close to recent years
+    svgUpdate: () => drawVis11() 
 
   },
   { 
@@ -95,6 +95,22 @@ let vis1Batches = [];
 let vis1Svg;
 let vis1Projection;
 let vis1Path;
+
+let selectedYears = [2014];  // Start with default year
+const warmEarthyColors = [
+  "#fae3e0", // rose
+  "#f4c6c1", // peach
+  "#e6b0aa", // dusty pink
+  "#d49b8f", // clay
+  "#cc6f73", // faded red
+  "#b03e49", // deep red
+  "#a85c56", // brick
+  "#80383d", // wine
+  "#5a1e24", // cocoa
+  "#3d252a", // dark plum
+  "#1f1317", // black cherry
+  "#8a2e36"  // oxblood
+];
 
 
   function drawKeyframe(index) {
@@ -122,7 +138,64 @@ let vis1Path;
 
     // Run visualization
     if (kf.svgUpdate) kf.svgUpdate();
+
+    if (document.getElementById("year-controls")) {
+      const container = document.getElementById("year-controls");
+      container.innerHTML = ""; // Clear existing
+    
+      availableYears.forEach(year => {
+        const btn = document.createElement("button");
+        btn.textContent = year;
+        btn.className = "year-btn";
+        btn.dataset.year = year;
+
+      window.yearColors = d3.scaleOrdinal()
+        .domain(window.availableYears)
+        .range([
+          "#fae3e0", "#f4c6c1", "#e6b0aa", "#cc6f73",
+          "#b03e49", "#80383d", "#5a1e24", "#3d252a",
+          "#8a2e36", "#d49b8f", "#a85c56", "#1f1317"
+        ]);
+      
+    
+        // Use D3 color so it matches the line
+        const color = yearColors(year);
+        btn.style.backgroundColor = selectedYears.includes(year) ? color : "#f0f0f0";
+        btn.style.color = selectedYears.includes(year) ? "#fff" : "#000";
+        btn.style.border = "1px solid #ccc";
+        btn.style.padding = "6px 12px";
+        btn.style.borderRadius = "5px";
+        btn.style.cursor = "pointer";
+        btn.style.transition = "0.3s";
+    
+        btn.addEventListener("click", () => {
+          const index = selectedYears.indexOf(year);
+    
+          if (index === -1) {
+            selectedYears.push(year); // Add
+          } else {
+            selectedYears.splice(index, 1); // Remove
+          }
+    
+          // Update graph
+          drawTimelineGraph(TimelineData, selectedYears, "vis9");
+    
+          // Re-style all buttons based on current selection
+          document.querySelectorAll(".year-btn").forEach(b => {
+            const y = +b.dataset.year;
+            const isActive = selectedYears.includes(y);
+            b.style.backgroundColor = isActive ? yearColors(y) : "#f0f0f0";
+            b.style.color = isActive ? "#fff" : "#000";
+          });
+        });
+    
+        container.appendChild(btn);
+      });
+    }
+    
+    
   }
+
 
   // Timeline node click handling
   document.querySelectorAll(".timeline-node").forEach(node => {
@@ -734,6 +807,7 @@ async function loadData() {
 
     // Convert Map to Array
     TimelineData = [];
+    window.availableYears = Array.from(groupedData.keys()).sort();  // e.g., [2014, 2015, 2016, ...]
     groupedData.forEach((months, year) => {
       months.forEach((total, month) => {
         TimelineData.push({
@@ -752,114 +826,113 @@ async function loadData() {
   
 }
 
-function drawTimelineGraph(data, selectedYear, svgId) {
-  const width = 800, height = 600;  // Match createBarGraph
-  const margin = { top: 50, right: 100, bottom: 80, left: 50 }; // Adjusted top and right margins
 
-  // Select the SVG element and clear previous content
+
+function drawTimelineGraph(data, selectedYears, svgId) {
+  const width = 800, height = 600;
+  const margin = { top: 50, right: 100, bottom: 80, left: 50 };
+
   const svg = d3.select(`#${svgId}`);
   svg.selectAll("*").remove();
-  svg.attr("width", width).attr("height", height);
+  svg
+  .attr("viewBox", `0 0 ${width} ${height}`)
+  .attr("preserveAspectRatio", "xMidYMid meet");
 
-  // Filter and SORT data for the selected year by month
-  const yearData = data.filter(d => d.year === selectedYear).sort((a, b) => a.month - b.month);
+  const yearDataGrouped = d3.group(
+    data.filter(d => selectedYears.includes(d.year)),
+    d => d.year
+  );
 
-  console.log("Sorted Year Data:", yearData); // Debugging check
+  const allData = Array.from(yearDataGrouped.values()).flat();
 
-  // Define scales
   const x = d3.scaleBand()
-      .domain(d3.range(1, 13)) // Months 1-12
-      .range([margin.left, width - margin.right])
-      .padding(0.1);
+    .domain(d3.range(1, 13))
+    .range([margin.left, width - margin.right])
+    .padding(0.1);
 
   const y = d3.scaleLinear()
-      .domain([0, d3.max(yearData, d => d.total_deaths_missing) || 10]) // Ensure valid range
-      .nice()
-      .range([height - margin.bottom, margin.top]);
+    .domain([0, d3.max(allData, d => d.total_deaths_missing) || 10])
+    .nice()
+    .range([height - margin.bottom, margin.top]);
 
-  // Add Title
   svg.append("text")
-      .attr("x", width / 2)
-      .attr("y", 20)
-      .attr("text-anchor", "middle")
-      .style("font-size", "18px")
-      .style("font-weight", "bold")
-      .text("Monthly Deaths and Missing Migrants");
-
-  // Display Selected Year in Top Right Corner
-  svg.append("text")
-      .attr("x", width - margin.right)
-      .attr("y", 20)
-      .attr("text-anchor", "end")
-      .style("font-size", "16px")
-      .style("fill", "gray")
-      .text(`Year: ${selectedYear}`);
-
-  // Add Axes
-  svg.append("g")
-      .attr("transform", `translate(0,${height - margin.bottom})`)
-      .call(d3.axisBottom(x).tickFormat(d => d3.timeFormat("%b")(new Date(2024, d - 1, 1))))
-      .selectAll("text")
-      .attr("transform", "rotate(-45)")
-      .style("text-anchor", "end");
+    .attr("x", width / 2)
+    .attr("y", 20)
+    .attr("text-anchor", "middle")
+    .style("font-size", "18px")
+    .style("font-weight", "bold")
+    .text("Monthly Deaths and Missing Migrants");
 
   svg.append("g")
-      .attr("transform", `translate(${margin.left},0)`)
-      .call(d3.axisLeft(y));
+    .attr("transform", `translate(0,${height - margin.bottom})`)
+    .call(d3.axisBottom(x).tickFormat(d => d3.timeFormat("%b")(new Date(2024, d - 1, 1))))
+    .selectAll("text")
+    .attr("transform", "rotate(-45)")
+    .style("text-anchor", "end");
 
-  // Define line generator
-  const line = d3.line()
-      .x(d => x(d.month) + x.bandwidth() / 2)  // Center line on month bands
+  svg.append("g")
+    .attr("transform", `translate(${margin.left},0)`)
+    .call(d3.axisLeft(y));
+
+  const tooltip = d3.select("body").append("div")
+    .attr("class", "tooltip")
+    .style("position", "absolute")
+    .style("background", "rgba(0, 0, 0, 0.7)")
+    .style("color", "#fff")
+    .style("padding", "6px 10px")
+    .style("border-radius", "5px")
+    .style("font-size", "12px")
+    .style("pointer-events", "none")
+    .style("visibility", "hidden");
+
+  yearDataGrouped.forEach((entries, year) => {
+   // Build complete 12-month array with zeros for missing
+    const monthMap = new Map();
+    entries.forEach(d => {
+      if (!isNaN(d.month) && !isNaN(d.total_deaths_missing)) {
+        monthMap.set(d.month, d.total_deaths_missing);
+      }
+    });
+    const sortedData = d3.range(1, 13).map(m => ({
+      month: m,
+      total_deaths_missing: monthMap.get(m) || 0
+    }));
+
+    const line = d3.line()
+      .x(d => x(d.month) + x.bandwidth() / 2)
       .y(d => y(d.total_deaths_missing))
-      .curve(d3.curveMonotoneX);  // Smooth curve
+      .curve(d3.curveMonotoneX);
 
-  // Draw the line
-  svg.append("path")
-      .datum(yearData)
+    svg.append("path")
+      .datum(sortedData)
       .attr("fill", "none")
-      .attr("stroke", "steelblue")
+      .attr("stroke", yearColors(year))
       .attr("stroke-width", 3)
       .attr("d", line);
 
-  // Tooltip div (hidden initially)
-  const tooltip = d3.select("body").append("div")
-      .attr("class", "tooltip")
-      .style("position", "absolute")
-      .style("background", "rgba(0, 0, 0, 0.7)")
-      .style("color", "#fff")
-      .style("padding", "6px 10px")
-      .style("border-radius", "5px")
-      .style("font-size", "12px")
-      .style("pointer-events", "none")
-      .style("visibility", "hidden");
-
-  // Add points on the line with hover interaction
-  svg.selectAll(".dot")
-      .data(yearData)
+    svg.selectAll(`.dot-${year}`)
+      .data(sortedData)
       .enter()
       .append("circle")
-      .attr("class", "dot")
+      .attr("class", `dot-${year}`)
       .attr("cx", d => x(d.month) + x.bandwidth() / 2)
       .attr("cy", d => y(d.total_deaths_missing))
       .attr("r", 5)
-      .attr("fill", "red")
+      .attr("fill", yearColors(year))
       .on("mouseover", function(event, d) {
-          d3.select(this).transition().attr("r", 8).attr("fill", "darkred");
-
-          tooltip.style("visibility", "visible")
-                 .html(`<strong>${d3.timeFormat("%B")(new Date(2024, d.month - 1, 1))}</strong>: ${d.total_deaths_missing} deaths`)
-                 .style("top", (event.pageY - 30) + "px")
-                 .style("left", (event.pageX + 10) + "px");
+        tooltip.style("visibility", "visible")
+          .html(`<strong>${year} - ${d3.timeFormat("%B")(new Date(2024, d.month - 1, 1))}</strong>: ${d.total_deaths_missing} deaths`)
+          .style("top", (event.pageY - 30) + "px")
+          .style("left", (event.pageX + 10) + "px");
       })
-      .on("mousemove", function(event) {
-          tooltip.style("top", (event.pageY - 30) + "px")
-                 .style("left", (event.pageX + 10) + "px");
+      .on("mousemove", event => {
+        tooltip.style("top", (event.pageY - 30) + "px")
+          .style("left", (event.pageX + 10) + "px");
       })
-      .on("mouseout", function() {
-          d3.select(this).transition().attr("r", 5).attr("fill", "red");
-          tooltip.style("visibility", "hidden");
-      });
+      .on("mouseout", () => tooltip.style("visibility", "hidden"));
+  });
 }
+
 
 function boldWord(word, color) {
   // Get the active verse (it should be a part of the current stanza)
@@ -926,6 +999,148 @@ const observer = new IntersectionObserver((entries) => {
 
 // Start observing each verse section
 verseSections.forEach(section => observer.observe(section));
+
+function drawVis10() {
+  const svg = d3.select("#vis10").attr("width", 800).attr("height", 600);
+  svg.selectAll("*").remove();
+
+  const fields = [
+    { label: "Missing Name", key: "Name" },
+    { label: "Missing Age", key: "Age" },
+    { label: "Missing Gender", key: "Sex" },
+    { label: "Unknown Origin", key: "Country of Origin", unknownValue: "Unknown" }
+  ];
+
+  d3.csv("final_missing_migrants_preprocessed.csv").then(data => {
+    const missingCounts = fields.map(f => {
+      let count;
+      if (f.unknownValue) {
+        count = data.filter(d => d[f.key]?.trim().toLowerCase() === f.unknownValue.toLowerCase()).length;
+      } else {
+        count = data.filter(d => !d[f.key] || d[f.key].trim() === "").length;
+      }
+      return { field: f.label, count };
+    });
+
+    const margin = { top: 60, right: 40, bottom: 100, left: 60 },
+          width = 800 - margin.left - margin.right,
+          height = 600 - margin.top - margin.bottom;
+
+    const g = svg.append("g").attr("transform", `translate(${margin.left},${margin.top})`);
+
+    const x = d3.scaleBand()
+      .domain(missingCounts.map(d => d.field))
+      .range([0, width])
+      .padding(0.3);
+
+    const y = d3.scaleLinear()
+      .domain([0, d3.max(missingCounts, d => d.count)])
+      .nice()
+      .range([height, 0]);
+
+    g.append("g")
+      .attr("transform", `translate(0,${height})`)
+      .call(d3.axisBottom(x))
+      .selectAll("text")
+      .attr("transform", "rotate(-30)")
+      .style("text-anchor", "end");
+
+    g.append("g").call(d3.axisLeft(y));
+
+    g.selectAll(".bar")
+      .data(missingCounts)
+      .enter()
+      .append("rect")
+      .attr("x", d => x(d.field))
+      .attr("y", d => y(d.count))
+      .attr("width", x.bandwidth())
+      .attr("height", d => height - y(d.count))
+      .attr("fill", "#80383d");
+
+    svg.append("text")
+      .attr("x", 400)
+      .attr("y", 30)
+      .attr("text-anchor", "middle")
+      .style("font-size", "18px")
+      .style("font-weight", "bold")
+      .text("How Migrants Disappear from the Record");
+  });
+}
+
+function drawVis11() {
+  const svg = d3.select("#vis11").attr("width", 960).attr("height", 600);
+  svg.selectAll("*").remove(); // Clear any previous content
+
+  const margin = { top: 40, right: 50, bottom: 80, left: 50 };
+  const width = 960 - margin.left - margin.right;
+  const height = 600 - margin.top - margin.bottom;
+
+  // Data for the circles
+  const circleData = [
+    { id: "wave", label: "Waves", x: 200, y: 200, radius: 50, description: "Dangerous sea crossings, e.g., Mediterranean, causing thousands of deaths.", color: "#4B9CD3" },
+    { id: "gate", label: "Gates", x: 500, y: 150, radius: 50, description: "Border fences and patrols, such as the US-Mexico border, where migrants face harsh restrictions.", color: "#F29C11" },
+    { id: "land", label: "Land", x: 300, y: 400, radius: 50, description: "Harsh terrains like the Sahara desert that cause dehydration, exhaustion, and death.", color: "#C97C6B" }
+  ];
+
+  // Create text box for dynamic information
+  const textBox = svg.append("text")
+    .attr("x", width/2  - 400 )
+    .attr("y", height/2 +40)
+    .attr("text-anchor", "start")
+    .style("font-size", "14px")
+    .style("fill", "#3d252a") // Dark text to match theme
+    .style("font-weight", "normal")
+    .text("Click on a barrier to learn more.");
+
+  // Draw circles for each barrier
+  svg.selectAll(".barrier-circle")
+    .data(circleData)
+    .enter()
+    .append("circle")
+    .attr("class", "barrier-circle")
+    .attr("cx", d => d.x)
+    .attr("cy", d => d.y)
+    .attr("r", d => d.radius)
+    .attr("fill", d => d.color)
+    .attr("stroke", "#e5533b") // Stroke color for contrast
+    .attr("stroke-width", 3)
+    .style("cursor", "pointer")
+    .on("mouseover", function(event, d) {
+      d3.select(this).attr("fill", "#e5533b"); // Change fill color on hover
+    })
+    .on("mouseout", function() {
+      d3.select(this).attr("fill", d => d.color); // Revert to original color
+    })
+    .on("click", function(event, d) {
+      // Update the text content when clicked
+      textBox.text(`${d.label}: ${d.description}`);
+    });
+
+  // Add labels to the circles
+  svg.selectAll(".circle-label")
+    .data(circleData)
+    .enter()
+    .append("text")
+    .attr("class", "circle-label")
+    .attr("x", d => d.x)
+    .attr("y", d => d.y)
+    .attr("text-anchor", "middle")
+    .attr("dy", 5) // Positioning the text inside the circle
+    .style("fill", "#fff")
+    .style("font-size", "12px")
+    .style("font-weight", "bold")
+    .text(d => d.label);
+
+  // Add Title
+  svg.append("text")
+    .attr("x", width / 2)
+    .attr("y", margin.top)
+    .attr("text-anchor", "middle")
+    .style("font-size", "20px")
+    .style("font-weight", "bold")
+    .style("fill", "#3d252a") // Title color matching the theme
+    .text("Barriers Faced by Migrants");
+}
 
 
 async function initialise() {
