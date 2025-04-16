@@ -538,10 +538,129 @@ let vis1Path;
       });
   }  
   
+  // async function drawVis13() {
+  //   const svg = d3.select("#vis3")
+  // .attr("viewBox", "0 0 960 600")
+  // .attr("preserveAspectRatio", "xMidYMid meet");
+  //   svg.selectAll("*").remove();
+  
+  //   const width = 960;
+  //   const height = 600;
+  
+  //   const projection = d3.geoNaturalEarth1()
+  //     .scale(160)
+  //     .translate([width / 2, height / 2]);
+  
+  //   const path = d3.geoPath().projection(projection);
+  
+  //   const world = await d3.json("https://cdn.jsdelivr.net/npm/world-atlas@2/countries-110m.json");
+  //   const countries = topojson.feature(world, world.objects.countries);
+  
+  //   const data = await d3.csv("final_missing_migrants_preprocessed.csv");
+  
+  //   const g = svg.append("g");
+  
+  //   // Base map
+  //   g.selectAll("path")
+  //     .data(countries.features)
+  //     .join("path")
+  //     .attr("fill", "#fae3e0")
+  //     .attr("stroke", "#999")
+  //     .attr("stroke-width", 0.5)
+  //     .attr("d", path);
+  
+  //   // Title
+  //   svg.append("text")
+  //     .attr("x", width / 2)
+  //     .attr("y", 30)
+  //     .attr("text-anchor", "middle")
+  //     .style("font-size", "20px")
+  //     .style("fill", "#3d252a")
+  //     .style("font-weight", "bold")
+  //     .text("Migrant Profiles by Type");
+  
+  //   // Dot drawing
+  //   const dots = data.filter(d => {
+  //     const coords = d["Coordinates"]?.split(",").map(c => +c.trim());
+  //     return coords && coords.length === 2 && !isNaN(coords[0]) && !isNaN(coords[1]);
+  //   });
+  
+  //   g.selectAll("circle")
+  //     .data(dots)
+  //     .enter()
+  //     .append("circle")
+  //     .attr("cx", d => projection([+d["Coordinates"].split(",")[1], +d["Coordinates"].split(",")[0]])[0])
+  //     .attr("cy", d => projection([+d["Coordinates"].split(",")[1], +d["Coordinates"].split(",")[0]])[1])
+  //     .attr("r", 2.5)
+  //     .attr("opacity", 0.65)
+  //     .attr("fill", d => {
+  //       if (+d["Number of Children"] > 0) return "#fcd85d";
+  //       if (+d["Number of Females"] > 0) return "#cc6f73";
+  //       if (+d["Number of Males"] > 0) return "#80383d";
+  //       return "#3d252a";
+  //     });
+  
+  //   // Zoom feature
+  //   const zoom = d3.zoom()
+  //     .scaleExtent([1, 8])
+  //     .on("zoom", (event) => g.attr("transform", event.transform));
+  
+  //   svg.call(zoom);
+  
+  //   // Zoom buttons
+  //   svg.append("text")
+  //     .attr("id", "zoom-in")
+  //     .attr("x", 30)
+  //     .attr("y", height - 70)
+  //     .text("➕")
+  //     .style("font-size", "24px")
+  //     .style("cursor", "pointer")
+  //     .on("click", () => svg.transition().call(zoom.scaleBy, 1.3));
+  
+  //   svg.append("text")
+  //     .attr("id", "zoom-out")
+  //     .attr("x", 30)
+  //     .attr("y", height - 35)
+  //     .text("➖")
+  //     .style("font-size", "24px")
+  //     .style("cursor", "pointer")
+  //     .on("click", () => svg.transition().call(zoom.scaleBy, 0.7));
+  
+  //   // Color Legend
+  //   const legendItems = [
+  //     { label: "Children", color: "#fcd85d" },
+  //     { label: "Women", color: "#cc6f73" },
+  //     { label: "Men", color: "#80383d" },
+  //     { label: "Unknown", color: "#3d252a" }
+  //   ];
+  
+  //   const legendGroup = svg.append("g")
+  //     .attr("transform", `translate(${width - 160}, 60)`);
+  
+  //   legendGroup.selectAll("rect")
+  //     .data(legendItems)
+  //     .enter()
+  //     .append("rect")
+  //     .attr("x", 0)
+  //     .attr("y", (d, i) => i * 20)
+  //     .attr("width", 12)
+  //     .attr("height", 12)
+  //     .attr("fill", d => d.color);
+  
+  //   legendGroup.selectAll("text")
+  //     .data(legendItems)
+  //     .enter()
+  //     .append("text")
+  //     .attr("x", 18)
+  //     .attr("y", (d, i) => i * 20 + 10)
+  //     .text(d => d.label)
+  //     .attr("font-size", "12px")
+  //     .attr("fill", "#3d252a");
+  // }
   async function drawVis13() {
     const svg = d3.select("#vis3")
-  .attr("viewBox", "0 0 960 600")
-  .attr("preserveAspectRatio", "xMidYMid meet");
+      .attr("viewBox", "0 0 960 600")
+      .attr("preserveAspectRatio", "xMidYMid meet");
     svg.selectAll("*").remove();
   
     const width = 960;
@@ -560,7 +679,7 @@ let vis1Path;
   
     const g = svg.append("g");
   
-    // Base map
+    // Draw base map
     g.selectAll("path")
       .data(countries.features)
       .join("path")
@@ -579,26 +698,120 @@ let vis1Path;
       .style("font-weight", "bold")
       .text("Migrant Profiles by Type");
   
-    // Dot drawing
-    const dots = data.filter(d => {
-      const coords = d["Coordinates"]?.split(",").map(c => +c.trim());
-      return coords && coords.length === 2 && !isNaN(coords[0]) && !isNaN(coords[1]);
-    });
+    // Caption
+    svg.append("text")
+      .attr("x", width / 2)
+      .attr("y", height - 15)
+      .attr("text-anchor", "middle")
+      .style("font-size", "13px")
+      .style("fill", "#444")
+      .text("Hover over points to learn more about individual cases");
   
-    g.selectAll("circle")
-      .data(dots)
-      .enter()
-      .append("circle")
-      .attr("cx", d => projection([+d["Coordinates"].split(",")[1], +d["Coordinates"].split(",")[0]])[0])
-      .attr("cy", d => projection([+d["Coordinates"].split(",")[1], +d["Coordinates"].split(",")[0]])[1])
-      .attr("r", 2.5)
-      .attr("opacity", 0.65)
-      .attr("fill", d => {
-        if (+d["Number of Children"] > 0) return "#fcd85d";
-        if (+d["Number of Females"] > 0) return "#cc6f73";
-        if (+d["Number of Males"] > 0) return "#80383d";
-        return "#3d252a";
+    // Tooltip
+    const tooltip = d3.select("body").append("div")
+      .attr("class", "tooltip")
+      .style("position", "absolute")
+      .style("background", "#333")
+      .style("color", "#fff")
+      .style("padding", "6px 10px")
+      .style("border-radius", "4px")
+      .style("font-size", "12px")
+      .style("pointer-events", "none")
+      .style("visibility", "hidden");
+  
+    // Filters
+    const filters = {
+      children: true,
+      women: true,
+      men: true,
+      unknown: true
+    };
+  
+    // Combined checkbox + legend inside SVG
+    svg.append("foreignObject")
+      .attr("x", width - 180)
+      .attr("y", 50)
+      .attr("width", 160)
+      .attr("height", 130)
+      .append("xhtml:div")
+      .style("font-size", "13px")
+      .style("line-height", "1.4")
+      .style("background", "#fff")
+      .style("border", "1px solid #ccc")
+      .style("border-radius", "6px")
+      .style("padding", "8px")
+      .html(`
+        <label><input type="checkbox" id="chk-children" checked /> <span style="color:#fcd85d;">■</span> Children</label><br/>
+        <label><input type="checkbox" id="chk-women" checked /> <span style="color:#cc6f73;">■</span> Women</label><br/>
+        <label><input type="checkbox" id="chk-men" checked /> <span style="color:#80383d;">■</span> Men</label><br/>
+        <label><input type="checkbox" id="chk-unknown" checked /> <span style="color:#3d252a;">■</span> Unknown</label>
+      `);
+  
+    d3.selectAll("#chk-children, #chk-women, #chk-men, #chk-unknown")
+      .on("change", () => {
+        filters.children = d3.select("#chk-children").property("checked");
+        filters.women = d3.select("#chk-women").property("checked");
+        filters.men = d3.select("#chk-men").property("checked");
+        filters.unknown = d3.select("#chk-unknown").property("checked");
+        drawDots();
       });
+  
+    function drawDots() {
+      g.selectAll("circle").remove();
+  
+      const filtered = data.filter(d => {
+        const coords = d["Coordinates"]?.split(",").map(c => +c.trim());
+        if (!coords || coords.length !== 2 || isNaN(coords[0]) || isNaN(coords[1])) return false;
+  
+        const isChild = +d["Number of Children"] > 0;
+        const isWoman = +d["Number of Females"] > 0;
+        const isMan = +d["Number of Males"] > 0;
+  
+        if (isChild && filters.children) return true;
+        if (!isChild && isWoman && filters.women) return true;
+        if (!isChild && !isWoman && isMan && filters.men) return true;
+        if (!isChild && !isWoman && !isMan && filters.unknown) return true;
+        return false;
+      });
+  
+      g.selectAll("circle")
+        .data(filtered)
+        .enter()
+        .append("circle")
+        .attr("cx", d => projection([+d["Coordinates"].split(",")[1], +d["Coordinates"].split(",")[0]])[0])
+        .attr("cy", d => projection([+d["Coordinates"].split(",")[1], +d["Coordinates"].split(",")[0]])[1])
+        .attr("r", 2.2)
+        .attr("fill", d => {
+          if (+d["Number of Children"] > 0) return "#fcd85d";
+          if (+d["Number of Females"] > 0) return "#cc6f73";
+          if (+d["Number of Males"] > 0) return "#80383d";
+          return "#3d252a";
+        })
+        .attr("opacity", 0.7)
+        .on("mouseover", function (event, d) {
+          d3.select(this).attr("stroke", "#000").attr("stroke-width", 1);
+          tooltip.style("visibility", "visible")
+            .html(`
+              <strong>Year:</strong> ${d["Incident Year"]}<br>
+              <strong>Cause:</strong> ${d["Cause of Death"]}<br>
+              <strong>Location:</strong> ${d["Location of Incident"]}<br>
+              <strong>Profile:</strong>
+              ${+d["Number of Children"] > 0 ? "Child" :
+                +d["Number of Females"] > 0 ? "Woman" :
+                +d["Number of Males"] > 0 ? "Man" : "Unknown"}
+            `);
+        })
+        .on("mousemove", event => {
+          tooltip.style("top", (event.pageY - 30) + "px")
+            .style("left", (event.pageX + 15) + "px");
+        })
+        .on("mouseout", function () {
+          d3.select(this).attr("stroke", "none");
+          tooltip.style("visibility", "hidden");
+        });
+    }
+  
+    drawDots();
   
     // Zoom feature
     const zoom = d3.zoom()
@@ -625,37 +838,6 @@ let vis1Path;
       .style("font-size", "24px")
       .style("cursor", "pointer")
       .on("click", () => svg.transition().call(zoom.scaleBy, 0.7));
-  
-    // Color Legend
-    const legendItems = [
-      { label: "Children", color: "#fcd85d" },
-      { label: "Women", color: "#cc6f73" },
-      { label: "Men", color: "#80383d" },
-      { label: "Unknown", color: "#3d252a" }
-    ];
-  
-    const legendGroup = svg.append("g")
-      .attr("transform", `translate(${width - 160}, 60)`);
-  
-    legendGroup.selectAll("rect")
-      .data(legendItems)
-      .enter()
-      .append("rect")
-      .attr("x", 0)
-      .attr("y", (d, i) => i * 20)
-      .attr("width", 12)
-      .attr("height", 12)
-      .attr("fill", d => d.color);
-  
-    legendGroup.selectAll("text")
-      .data(legendItems)
-      .enter()
-      .append("text")
-      .attr("x", 18)
-      .attr("y", (d, i) => i * 20 + 10)
-      .text(d => d.label)
-      .attr("font-size", "12px")
-      .attr("fill", "#3d252a");
   }
   
   
